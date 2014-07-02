@@ -1,0 +1,114 @@
+<div class="page-header">
+	<p class="text-info pull-right hidden-xs"><?=__('Last logged in :timestamp.', array(':timestamp' => Date::fuzzy_span($user->last_login)));?></p>
+	<h2><?=__('Profile');?></h2>
+</div>
+
+<div class="row">
+	<div class="col-sm-6">
+		<?=Form::open('account/index', array('method' => 'post', 'role' => 'form', 'class' => 'form-horizontal', 'autocomplete' => 'off', 'data-widget' => 'account/profile'));?>
+
+			<?php if (isset($error)): ?>
+				<div class="alert alert-warning">
+					<p><?=$error;?></p>
+				</div>
+			<?php endif; ?>
+
+			<div class="form-group">
+				<?=Form::label('profileFullname', __('Full name'), array('class' => 'col-sm-4 control-label'));?>
+				<div class="col-sm-6">
+					<input type="text" name="fullname" class="hidden">
+					<?=Form::input('fullname', $user->fullname, array('class' => 'form-control', 'id' => 'profileFullname', 'autocomplete' => 'off'));?>
+				</div>
+			</div>
+
+			<div class="form-group">
+				<?=Form::label('profileCountry', __('Country'), array('class' => 'col-sm-4 control-label'));?>
+				<div class="col-sm-6">
+					<?=Form::select('country', array('' => '') + Carrier::countries(), $user->country, array('class' => 'form-control', 'id' => 'profileCountry', 'placeholder' => 'Select country'));?>
+				</div>
+			</div>
+
+			<div class="form-group">
+				<?=Form::label('profileLanguage', __('Language'), array('class' => 'col-sm-4 control-label'));?>
+				<div class="col-sm-6">
+					<?=Form::select('language', array('' => '') + $languages, $user->language, array('class' => 'form-control', 'id' => 'profileLanguage', 'placeholder' => 'Select language'));?>
+				</div>
+			</div>
+
+			<div class="form-group">
+				<?=Form::label('profileEmail', __('E-Mail address'), array('class' => 'col-sm-4 control-label'));?>
+				<div class="col-sm-6">
+					<input type="text" name="email" class="hidden">
+					<?=Form::input('email', $user->email, array('class' => 'form-control', 'id' => 'profileEmail', 'data-original' => $user->email, 'autocomplete' => 'off'));?>
+					<small class="help-block hidden" data-toggle-onchange="true">
+						<?=__('Confirmation link will be sent to your new email address.');?>
+					</small>
+				</div>
+			</div>
+
+			<div class="form-group">
+				<?=Form::label('profilePassword', __('Password'), array('class' => 'col-sm-4 control-label'));?>
+				<div class="col-sm-6">
+					<input type="text" name="password" class="hidden">
+					<?=Form::password('password', NULL, array('class' => 'form-control', 'id' => 'profilePassword', 'placeholder' => '******', 'autocomplete' => 'off'));?>
+					<div class="help-block strength password-not-empty hidden">
+						<div class="bar b1"></div>
+						<div class="bar b2"></div>
+						<div class="bar b3"></div>
+						<div class="bar b4"></div>
+					</div>
+					<small class="help-block password-not-empty hidden" style="font-style: italic; margin-bottom: 0"><?=_('Can be cracked in');?> <span class="crack-time"></span></small>
+				</div>
+			</div>
+
+			<div class="form-group password-not-empty hidden">
+				<?=Form::label('profilePasswordConfirm', __('Confirm password'), array('class' => 'col-sm-4 control-label'));?>
+				<div class="col-sm-6">
+					<input type="text" name="password_confirm" class="hidden">
+					<?=Form::password('password_confirm', NULL, array('class' => 'form-control', 'id' => 'profilePasswordConfirm', 'autocomplete' => 'off'));?>
+					<small class="help-block">
+						<span class="pwd-confirm text-success hidden"><?=__('Confirmation link will be sent to your email address.');?></span>
+						<span class="pwd-error text-danger hidden"><?=__('The passwords are not matching, please try again.');?>
+					</small>
+				</div>
+			</div>
+
+			<div class="form-group">
+				<div class="col-sm-offset-4">
+					<?=Form::button(NULL, __('Save changes'), array('type' => 'submit', 'class' => 'btn btn-lg btn-primary', 'style' => 'margin-left: 15px'));?>
+				</div>
+			</div>
+
+		<?=Form::close();?>
+
+	</div>
+	<div class="col-sm-6">
+		<h3 style="margin-top: 0"><?=__('Hook templates');?></h3>
+		<table class="table table-block">
+			<thead>
+				<tr>
+					<th><?=__('Carrier');?></th>
+					<th><?=__('Origin');?></th>
+					<th><?=__('Destination');?></th>
+					<th><?=__('Method');?></th>
+					<th><?=__('Actions');?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ($user->hooks->find_all() as $hook):?>
+					<tr>
+						<td data-label="<?=__('Carrier');?>" <?=($hook->carrier->loaded() ? '' : ' class="text-muted"');?>><?=($hook->carrier->loaded() ? $hook->carrier->name : 'Any');?></td>
+						<td data-label="<?=__('Origin');?>"<?=( ! empty($hook->origin) ? '' : ' class="text-muted"');?>><?=( ! empty($hook->origin) ? Carrier::country($hook->origin) : 'Any');?></td>
+						<td data-label="<?=__('Destination');?>"<?=( ! empty($hook->destination) ? '' : ' class="text-muted"');?>><?=( ! empty($hook->destination) ? Carrier::country($hook->destination) : 'Any');?></td>
+						<td data-label="<?=__('Method');?>"><?=$hook->method;?></td>
+						<td data-label="<?=__('Actions');?>">
+							<?=HTML::anchor('hook/edit/'.$hook->id, 'Edit', array('class' => 'btn btn-info btn-sm', 'title' => 'Edit hook template'));?>
+							<?=HTML::anchor('hook/delete/'.$hook->id, 'Delete', array('class' => 'btn btn-danger btn-sm', 'title' => 'Delete hook template'));?>
+						</td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+		<?=HTML::anchor('hook/create', __('Add hook template'), array('class' => 'btn btn-success btn-lg'));?>
+	</div>
+</div>
