@@ -51,7 +51,7 @@ class Carrier_Express_DHL extends Carrier {
 		}
 
 		// Parse origin location
-		foreach (array('origin', 'destination') => $type)
+		foreach (array('origin', 'destination') as $type)
 		{
 			if (empty($this->package->{$type.'_location'}))
 			{
@@ -64,7 +64,7 @@ class Carrier_Express_DHL extends Carrier {
 					$location = Carrier::location_to_coords(UTF8::trim(end($parts)));
 
 					// Set origin and destination location
-					$this->package>{$type.'_location'} = $location['country'];
+					$this->package->{$type.'_location'} = $location['country'];
 				}
 			}
 		}

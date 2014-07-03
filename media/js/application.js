@@ -32,7 +32,7 @@ $(document).on('ready', function () {
 		}
 
 		return false;
-	})
+	});
 
 	// Package list tablesorting and filtering
 	// ---

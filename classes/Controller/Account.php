@@ -162,6 +162,10 @@ class Controller_Account extends Controller_Template {
 		$this->view = View::factory('account/login')
 		->bind('failed', $failed);
 
+		// Set template flags
+		$this->template->hide_header = TRUE;
+		$this->template->no_main = TRUE;
+
 		if ($this->request->method() === HTTP_Request::POST)
 		{
 			// Extract keys from POST data
@@ -224,6 +228,135 @@ class Controller_Account extends Controller_Template {
 		// Redirect to login
 		return HTTP::redirect('account/login');
 	}
+
+	/**
+	 * Open Authentication register or login
+	 *
+	 * @return void
+	 */
+	public function action_oauth()
+	{
+		if ($this->request->query('error'))
+		{
+			// Proxy login page
+			$this->action_login();
+
+			// Set errors
+			$this->view->oauth_errors = $this->request->query();
+
+			return;
+		}
+
+		// Get allowed OAuth methods
+		$methods = array('facebook', 'google', 'github');
+
+		// Get requested method
+		$method = $this->request->param('id');
+
+		if (empty($method))
+			return HTTP::redirect('account/login');
+
+		if ( ! in_array($method, $methods))
+		{
+			throw HTTP_Exception::factory(500, 'Authentication method :method not allowed.', array(
+				':method' => $method));
+		}
+
+		// Get OAuth Config
+		$config = Kohana::$config->load('oauth2')->get($method);
+
+		// Setup OAuth client
+		$client = OAuth2_Client::factory(UTF8::ucfirst($method), Arr::get($config, 'client_id'), Arr::get($config, 'client_secret'));
+
+		if ($this->request->query('code'))
+		{
+			// Setup parameters
+			$params = array(
+				'code'         => $this->request->query('code'),
+				'redirect_uri' => Arr::get($config, 'redirect_uri')
+			);
+
+			// Get access token
+			$token = $client->get_access_token(OAuth2_Client::GRANT_TYPE_AUTHORIZATION_CODE, $params);
+
+			// Set client access token
+			$client->set_access_token($token);
+
+			// Get user data
+			$data = $client->get_user_data();
+
+			// Get auth token
+			$auth = ORM::factory('User_Auth')
+			->where('method', '=', $method)
+			->where('identifier', '=', Arr::get($data, 'id'))
+			->find();
+
+			if ( ! $auth->loaded())
+			{
+				// Find user by email
+				$user = ORM::factory('User', array('email' => Arr::get($data, 'email')));
+
+				if ( ! $user->loaded())
+				{
+					// Create User
+					$user->email = Arr::get($data, 'email');
+					$user->fullname = Arr::get($data, 'name');
+					$user->save();
+				}
+
+				// Assign this method to user oauths
+				$auth->identifier = Arr::get($data, 'id');
+				$auth->method = $method;
+				$auth->user_id = $user->id;
+			}
+
+			// Update oauth token
+			$auth->data = json_encode($data);
+			$auth->token = $token;
+			$auth->updated_at = date('Y-m-d H:i:s');
+			$auth->save();
+
+			// Login user
+			Auth::instance()->force_login($auth->user);
+
+			// Redirect to profile
+			return HTTP::redirect('account');
+		}
+		else
+		{
+			// Get the authorization url
+			$auth_url = $client->get_authentication_url(Arr::get($config, 'redirect_uri'), array(
+				'scope' => 'email'
+			));
+
+			// Redirect to the authorization url
+			HTTP::redirect($auth_url);
+		}
+	}
+
+	/**
+	 * Unlink OAuth2 connection
+	 *
+	 * @return void
+	 */
+	public function action_unlink()
+	{
+		// Get auth connection
+		$auth = ORM::factory('User_Auth', $this->request->param('id'));
+
+		if ($auth->user->id !== $this->user->id AND ! $this->user->is_admin())
+		{
+			// Dont allow unlinking others authentications
+			throw HTTP_Exception::factory(401, 'Not allowed');
+		}
+
+		// Delete authentication
+		$auth->delete();
+
+		// Redirect to account profile
+		HTTP::redirect('account');
+	}
+
 
 	public function action_test()
 	{

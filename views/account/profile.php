@@ -83,6 +83,28 @@
 
 	</div>
 	<div class="col-sm-6">
+
+		<h3 style="margin-top: 0"><?=__('Linked applications');?></h3>
+		<table class="table table-condensed table-block">
+			<thead>
+				<tr>
+					<th><?=__('Name');?></th>
+					<th><?=__('Last used');?></th>
+					<th><?=__('Actions');?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ($user->auths->find_all() as $item): ?>
+					<tr>
+						<td><?=UTF8::ucfirst($item->method);?></td>
+						<td><?=$item->updated_at;?></td>
+						<td><?=HTML::anchor('account/unlink/'.$item->id, __('unlink'), array('onclick' => 'return confirm(\''.__('Are you sure you want to delete this linked authentication?').'\');'));?></td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+
+
 		<h3 style="margin-top: 0"><?=__('Hook templates');?></h3>
 		<table class="table table-block">
 			<thead>

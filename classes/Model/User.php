@@ -34,6 +34,9 @@ class Model_User extends Model_Auth_User {
 		),
 		'services' => array(
 			'model'   => 'User_Service'
+		),
+		'auths' => array(
+			'model'   => 'User_Auth'
 		)
 	);
 

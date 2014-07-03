@@ -51,8 +51,8 @@
 			<tfoot>
 				<tr>
 					<td colspan="5">
-						<button type="button" class="btn btn-lg btn-default prev"><i class="icon-arrow-left glyphicon glyphicon-backward"></i></button>
-						<button type="button" class="btn btn-lg btn-default next"><i class="icon-arrow-right glyphicon glyphicon-forward"></i></button>
+						<button type="button" class="btn btn-lg btn-default prev"><i class="fa fa-arrow-left"></i></button>
+						<button type="button" class="btn btn-lg btn-default next"><i class="fa fa-arrow-right"></i></button>
 						<h3 class="pagedisplay pull-right" style="margin-top: 5px"></h3>
 						<h3 class="visible-xs pull-right" style="margin-top: 5px">page:&nbsp;</h3>
 					</td>
