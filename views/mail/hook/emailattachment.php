@@ -1,18 +1,9 @@
 <?=View::factory('mail/header');?>
-<?php
-	$state = intval($package->state);
-	$labels = array(
-		Model_Package::IN_TRANSIT => array('on the way', 'Stay tuned', '#61d2d6'),
-		Model_Package::IN_CUSTOMS => array('in customs', 'Prepare to contact them with package contents and toll', '#f0ad4e'),
-		Model_Package::PICK_UP    => array('ready to be picked up', 'Contact your post office if you want it delivered', '#5cb85c'),
-		Model_Package::DELIVERED  => array('delivered', 'Enjoy your package contents', '#5cb85c')
-	);
-?>
+
 <p>
 	<?=__('Dear Customer');?>,<br/>
-	<?=__('Your package is now :status. :thanks.', array(
-		':status' => '<strong style="color: '.$labels[$state][2].';">'.__($labels[$state][0]).'</strong>. ',
-		':thanks' => __($labels[$state][1]).'.'));?>
+	<?=__('We just sent an email to :emailrecipant with attachment for your package.', array(
+		':emailrecipant' => Arr::get($data, 'email_recipant', 'unknown')));?>
 </p>
 
 <p style="border: 1px solid #eee;padding: 15px; font-size:14px;background: #f5f5f5;">
