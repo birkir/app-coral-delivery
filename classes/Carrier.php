@@ -203,6 +203,8 @@ class Carrier {
 		curl_setopt($ch, CURLOPT_COOKIEJAR, APPPATH.'cache/17track.cookie');
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+		curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)');
+		curl_setopt($ch, CURLOPT_REFERER, 'http://17track.net');
 		$body = curl_exec($ch);
 
 		// Count
@@ -388,6 +390,95 @@ class Carrier {
 		}
 
 		return FALSE;
+	}
+
+	/**
+	 * Solve 17track captcha
+	 *
+	 * @return void
+	 */
+	public static function solve_captcha($attempt = 0)
+	{
+		// Only try three times to solve captcha
+		if ($attempt > 2) return FALSE;
+
+		// Get captcha image from 17track
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, 'http://www.17track.net/f/MyCaptchaHandler.ashx?get=image&d=&d=0.1563');
+		curl_setopt($ch, CURLOPT_COOKIEJAR, APPPATH.'cache/17track.cookie');
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+		curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)');
+		curl_setopt($ch, CURLOPT_REFERER, 'http://17track.net');
+		$body = curl_exec($ch);
+
+		// Create API Request
+		$request = Request::factory('http://api.dbcapi.me/api/captcha')
+		->method(HTTP_Request::POST)
+		->post(array(
+			'username'    => 'SolidR53',
+			'password'    => 'Solid.90',
+			'captchafile' => 'base64:'.base64_encode($body) 
+		));
+
+		// Execute request and get poll location
+		$poll = $request->execute()->headers('location');
+
+		// Set result as null by default
+		$result = NULL;
+
+		for ($i = 0; $i < 3; $i++)
+		{
+			if ($result !== NULL) continue;
+
+			// Wait 5 seconds
+			sleep(5);
+
+			try
+			{
+				$data = json_decode(Request::factory($poll)
+				->headers('accept', 'application/json')
+				->execute()
+				->body());
+
+				if ( ! $data->is_correct)
+				{
+					// Try another captcha with bumped attempt counter
+					return self::solve_captcha($attempt + 1);
+				}
+
+				if ( ! empty($data->text))
+				{
+					// Set result data
+					$result = $data;
+				}
+			}
+			catch (Exception $e) {}
+		}
+
+		// Solve 17track captcha
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, 'http://www.17track.net/f/MyCaptchaHandler.ashx?get=validationresult&i='.UTF8::strtoupper($result->text).'&d=0.1563');
+		curl_setopt($ch, CURLOPT_COOKIEJAR, APPPATH.'cache/17track.cookie');
+		curl_setopt($ch, CURLOPT_COOKIEFILE, APPPATH.'cache/17track.cookie');
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+		curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)');
+		curl_setopt($ch, CURLOPT_REFERER, 'http://17track.net');
+		$body = curl_exec($ch);
+
+		if ($body !== 'true')
+		{
+			// Report as dead captcha
+			$request = Request::factory('http://api.dbcapi.me/api/captcha/'.$result->captcha.'/report')
+			->method(HTTP_Request::POST)
+			->post(array(
+				'username'    => 'SolidR53',
+				'password'    => 'Solid.90'
+			));
+		}
+
+		return TRUE;
 	}
 
 	/**

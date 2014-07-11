@@ -23,6 +23,12 @@ class Task_Process extends Minion_Task {
 		// Only report catastrophic errors
 		error_reporting(E_ERROR);
 
+		if ( ! Fragment::load('17track_captcha', Date::HOUR))
+		{
+			echo Debug::vars(Carrier::solve_captcha());
+			Fragment::save();
+		}
+
 		// Find all user services 6 hour update delay
 		$services = ORM::factory('User_Service')
 		->and_where_open()
@@ -110,7 +116,7 @@ class Task_Process extends Minion_Task {
 
 			if (intval($package->state) !== $state AND intval($package->notify_email) === 1)
 			{
-				mail($package->user->email, 'Coral Delivery :: '.__('Status update for :tracking_number', array(':tracking_number' => $package->tracking_number)), View::factory('hook/mail/package-status-update')->set('package', $package), implode("\r\n", array(
+				mail($package->user->email, 'Coral Delivery :: '.__('Status update for :tracking_number', array(':tracking_number' => $package->tracking_number)), View::factory('mail/package/status')->set('package', $package), implode("\r\n", array(
 					'MIME-Version: 1.0',
 					'Content-type: text/html; charset=utf-8',
 					'To: '.$package->user->fullname.' <'.$package->user->email.'>',

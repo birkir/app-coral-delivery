@@ -45,7 +45,7 @@ class Model_Package extends ORM {
 		'status' => array(
 			'model' => 'Package_Status'
 		),
-		'hook' => array(
+		'hooks' => array(
 			'model' => 'Package_Hook'
 		)
 	);

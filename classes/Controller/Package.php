@@ -115,6 +115,11 @@ class Controller_Package extends Controller_Template {
 				// Get post values
 				$post = $this->request->post();
 
+				if (empty(Arr::get($post, 'destination_carrier_id')))
+				{
+					$post['destination_carrier_id'] = NULL;
+				}
+
 				if ($package->origin_carrier_id !== Arr::get($post, 'origin_carrier_id'))
 				{
 					foreach ($package->status->where('direction', '=', Carrier::ORIGIN)->find_all() as $status)
@@ -134,7 +139,7 @@ class Controller_Package extends Controller_Template {
 				}
 
 				// Set package values
-				$package->values($this->request->post());
+				$package->values($post);
 
 				// Save package
 				$package->save();
@@ -151,6 +156,50 @@ class Controller_Package extends Controller_Template {
 	}
 
 	/**
+	 * Get tracking number details
+	 * with status informations.
+	 *
+	 * @return void
+	 */
+	public function action_detail()
+	{
+		// Setup main template view
+		$this->view = View::factory('package/detail')
+		->bind('package', $package)
+		->bind('extra', $extra)
+		->bind('origin', $origin)
+		->bind('destination', $destination);
+
+		// Get package with identity from params
+		$package = ORM::factory('Package', array('tracking_number' => $this->request->param('id')));
+
+		if ( ! $package->loaded())
+		{
+			throw HTTP_Exception::factory(404, 'Package not found');
+		}
+
+		if ($package->user_id !== $this->user->id OR ! $this->user->is_admin())
+		{
+			throw HTTP_Exception::factory(401, 'Not authorized to view this package');
+		}
+
+		// Bind extra information
+		$extra = json_decode($package->extra);
+
+		// Get origin status updates
+		$origin = $package->status
+		->where('direction', '=', Carrier::ORIGIN)
+		->order_by('timestamp', 'DESC')
+		->find_all();
+
+		// Get destination status updates
+		$destination = $package->status
+		->where('direction', '=', Carrier::DESTINATION)
+		->order_by('timestamp', 'DESC')
+		->find_all();
+	}
+
+	/**
 	 * Refresh package manually
 	 *
 	 * @return void
@@ -163,12 +212,12 @@ class Controller_Package extends Controller_Template {
 		}
 
 		// Get direction query string
-		$direction = intval($this->request->query('direction'));
+		$direction = intval(Arr::get($this->request->query(), 'direction', -1));
 
 		// Get package with identity from params
 		$package = ORM::factory('Package', array('tracking_number' => $this->request->param('id')));
 
-		if (empty($direction) OR $direction === Carrier::ORIGIN)
+		if ($direction === -1 OR $direction === Carrier::ORIGIN)
 		{
 			foreach ($package->status->where('direction', '=', Carrier::ORIGIN)->find_all() as $status)
 			{
@@ -180,7 +229,7 @@ class Controller_Package extends Controller_Template {
 			Carrier::factory($package, Carrier::ORIGIN)->track();
 		}
 
-		if (empty($direction) OR $direction === Carrier::DESTINATION)
+		if (($direction === -1 OR $direction === Carrier::DESTINATION) AND intval($package->destination_carrier_id) > 0)
 		{
 			foreach ($package->status->where('direction', '=', Carrier::DESTINATION)->find_all() as $status)
 			{
@@ -246,50 +295,6 @@ class Controller_Package extends Controller_Template {
 				'redirect' => '/package'
 			)
 		)));
-	}
-
-	/**
-	 * Get tracking number details
-	 * with status informations.
-	 *
-	 * @return void
-	 */
-	public function action_detail()
-	{
-		// Setup main template view
-		$this->view = View::factory('package/detail')
-		->bind('package', $package)
-		->bind('extra', $extra)
-		->bind('origin', $origin)
-		->bind('destination', $destination);
-
-		// Get package with identity from params
-		$package = ORM::factory('Package', array('tracking_number' => $this->request->param('id')));
-
-		if ( ! $package->loaded())
-		{
-			throw HTTP_Exception::factory(404, 'Package not found');
-		}
-
-		if ($package->user_id !== $this->user->id OR ! $this->user->is_admin())
-		{
-			throw HTTP_Exception::factory(401, 'Not authorized to view this package');
-		}
-
-		// Bind extra information
-		$extra = json_decode($package->extra);
-
-		// Get origin status updates
-		$origin = $package->status
-		->where('direction', '=', Carrier::ORIGIN)
-		->order_by('timestamp', 'DESC')
-		->find_all();
-
-		// Get destination status updates
-		$destination = $package->status
-		->where('direction', '=', Carrier::DESTINATION)
-		->order_by('timestamp', 'DESC')
-		->find_all();
 	}
 
 	/**

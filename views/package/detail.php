@@ -1,6 +1,6 @@
 <div class="page-header">
 	<div class="pull-right btn-toolbar">
-		<?=HTML::anchor('package/hooks/'.$package->tracking_number, __('Manage hooks'), array('class' => 'btn btn-lg btn-info btn-mobile-block'));?>
+		<?=HTML::anchor('hook/list/'.$package->tracking_number, __('Manage hooks'), array('class' => 'btn btn-lg btn-info btn-mobile-block'));?>
 		<?=HTML::anchor('package/edit/'.$package->tracking_number, __('Edit package'), array('class' => 'btn btn-lg btn-warning btn-mobile-block'));?>
 		<?php if ($user->is_admin()): ?>
 			<div class="btn-group btn-mobile-left">
@@ -77,36 +77,40 @@
 </div>
 
 <hr>
-
-<h3><?=__('Destination (:country)', array(':country' => $package->destination_location));?></h3>
-<table class="table table-block">
-	<thead>
-		<tr>
-			<th width="15%" colspan="2"><?=__('Date');?></th>
-			<th width="40%"><?=__('Location');?></th>
-			<th width="45%"><?=__('Message');?></th>
-		</tr>
-	</thead>
-	<tbody>
-		<?php foreach ($destination as $status): ?>
-			<tr data-coordinates="<?=$status->coordinates;?>">
-				<td width="7%" data-label="<?=__('Date');?>">
-					<?php $dt = new DateTime($status->timestamp); ?>
-					<time datetime="<?=$dt->format('c');?>"><?=$dt->format('M j');?></time>
-				</td>
-				<td class="text-muted" data-label="<?=__('Time');?>">
-					<?php if (intval($dt->format('Hi')) > 0): ?>
-						<?=$dt->format('H:i');?>
-					<?php endif; ?>
-				</td>
-				<td data-label="<?=__('Location');?>"><?=$status->location;?></td>
-				<td data-label="<?=__('Message');?>"><?=$status->message;?></td>
+<?php if (intval($package->destination_carrier_id) > 0 AND intval($package->destination_carrier_id) !== 2): ?>
+	<h3><?=__('Destination (:country)', array(':country' => $package->destination_location));?></h3>
+	<table class="table table-block">
+		<thead>
+			<tr>
+				<th width="15%" colspan="2"><?=__('Date');?></th>
+				<th width="40%"><?=__('Location');?></th>
+				<th width="45%"><?=__('Message');?></th>
 			</tr>
-		<?php endforeach; ?>
-	</tbody>
-</table>
+		</thead>
+		<tbody>
+			<?php foreach ($destination as $status): ?>
+				<tr data-coordinates="<?=$status->coordinates;?>">
+					<td width="7%" data-label="<?=__('Date');?>">
+						<?php $dt = new DateTime($status->timestamp); ?>
+						<time datetime="<?=$dt->format('c');?>"><?=$dt->format('M j');?></time>
+					</td>
+					<td class="text-muted" data-label="<?=__('Time');?>">
+						<?php if (intval($dt->format('Hi')) > 0): ?>
+							<?=$dt->format('H:i');?>
+						<?php endif; ?>
+					</td>
+					<td data-label="<?=__('Location');?>"><?=$status->location;?></td>
+					<td data-label="<?=__('Message');?>"><?=$status->message;?></td>
+				</tr>
+			<?php endforeach; ?>
+		</tbody>
+	</table>
 
-<h3><?=__('Origin (:country)', array(':country' => $package->origin_location));?></h3>
+	<h3><?=__('Origin (:country)', array(':country' => $package->origin_location));?></h3>
+
+<?php else: ?>
+	<h3>From <strong><?=$package->origin_location;?></strong> to <strong><?=$package->destination_location;?></strong></h3>
+<?php endif; ?>
 
 <table class="table table-block">
 	<thead>

@@ -23,7 +23,7 @@ class Controller_Template extends Controller {
 	/**
 	 * @var array Allowed controllers and actions
 	 */
-	public $allowed = array('Account' => array('login', 'register', 'oauth'), 'Media');
+	public $allowed = array('Account' => array('login', 'register', 'oauth', 'resetpassword'), 'Media');
 
 	/**
 	 * @var bool  Auto render template

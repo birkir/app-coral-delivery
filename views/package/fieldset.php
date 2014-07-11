@@ -36,7 +36,7 @@
 	<div class="form-group">
 		<?=Form::label('packageDestinationCarrier', __('Destination carrier').$re, array('class' => 'col-sm-2 control-label'));?>
 		<div class="col-sm-3">
-			<?=Form::select('destination_carrier_id', array('' => '') + $carriers, $package->destination_carrier_id, array('placeholder' => 'Use origin carrier', 'class' => 'form-control', 'id' => 'packageDestinationCarrier'));?>
+			<?=Form::select('destination_carrier_id', array('' => 'Same as origin carrier') + $carriers, $package->destination_carrier_id, array('class' => 'form-control', 'id' => 'packageDestinationCarrier'));?>
 		</div>
 	</div>
 
