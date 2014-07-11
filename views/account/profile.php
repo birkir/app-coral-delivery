@@ -83,7 +83,6 @@
 
 	</div>
 	<div class="col-sm-6">
-
 		<h3 style="margin-top: 0"><?=__('Linked applications');?></h3>
 		<table class="table table-condensed table-block">
 			<thead>
@@ -96,41 +95,12 @@
 			<tbody>
 				<?php foreach ($user->auths->find_all() as $item): ?>
 					<tr>
-						<td><?=UTF8::ucfirst($item->method);?></td>
+						<td><i class="fa fa-<?=$item->method;?>"></i>&nbsp;&nbsp;<?=UTF8::ucfirst($item->method);?></td>
 						<td><?=$item->updated_at;?></td>
 						<td><?=HTML::anchor('account/unlink/'.$item->id, __('unlink'), array('onclick' => 'return confirm(\''.__('Are you sure you want to delete this linked authentication?').'\');'));?></td>
 					</tr>
 				<?php endforeach; ?>
 			</tbody>
 		</table>
-
-
-		<h3 style="margin-top: 0"><?=__('Hook templates');?></h3>
-		<table class="table table-block">
-			<thead>
-				<tr>
-					<th><?=__('Carrier');?></th>
-					<th><?=__('Origin');?></th>
-					<th><?=__('Destination');?></th>
-					<th><?=__('Method');?></th>
-					<th><?=__('Actions');?></th>
-				</tr>
-			</thead>
-			<tbody>
-				<?php foreach ($user->hooks->find_all() as $hook):?>
-					<tr>
-						<td data-label="<?=__('Carrier');?>" <?=($hook->carrier->loaded() ? '' : ' class="text-muted"');?>><?=($hook->carrier->loaded() ? $hook->carrier->name : 'Any');?></td>
-						<td data-label="<?=__('Origin');?>"<?=( ! empty($hook->origin) ? '' : ' class="text-muted"');?>><?=( ! empty($hook->origin) ? Carrier::country($hook->origin) : 'Any');?></td>
-						<td data-label="<?=__('Destination');?>"<?=( ! empty($hook->destination) ? '' : ' class="text-muted"');?>><?=( ! empty($hook->destination) ? Carrier::country($hook->destination) : 'Any');?></td>
-						<td data-label="<?=__('Method');?>"><?=$hook->method;?></td>
-						<td data-label="<?=__('Actions');?>">
-							<?=HTML::anchor('hook/edit/'.$hook->id, 'Edit', array('class' => 'btn btn-info btn-sm', 'title' => 'Edit hook template'));?>
-							<?=HTML::anchor('hook/delete/'.$hook->id, 'Delete', array('class' => 'btn btn-danger btn-sm', 'title' => 'Delete hook template'));?>
-						</td>
-					</tr>
-				<?php endforeach; ?>
-			</tbody>
-		</table>
-		<?=HTML::anchor('hook/create', __('Add hook template'), array('class' => 'btn btn-success btn-lg'));?>
 	</div>
 </div>

@@ -1,4 +1,5 @@
 <?=View::factory('mail/header');?>
+
 <p>
 	Dear Customer,<br/>
 	Email change was requested for your account.

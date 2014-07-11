@@ -11,7 +11,7 @@
 				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
 				<strong><?=__('Unable to login');?>!</strong><br>
 				<?=__('Please check email or password and try again or :lostpwd', array(
-				':lostpwd' => HTML::anchor('account/password', __('reset your password'))));?>.
+				':lostpwd' => HTML::anchor('account/resetpassword', __('reset your password'))));?>.
 			</div>
 		<?php endif; ?>
 
@@ -58,7 +58,7 @@
 
 		<?=Form::close();?>
 		<div class="text-center">
-			<a href="#" class="text-muted"><small>lost password?</small></a>
+			<a href="/account/resetpassword" class="text-muted"><small>lost password?</small></a>
 		</div>
 	</div>
 </div>

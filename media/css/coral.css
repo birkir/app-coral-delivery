@@ -14,6 +14,8 @@ a, a:focus, a:hover {
 	color: #4B9DA0;
 }
 
+.form-control-static { padding-top: 4px; padding-bottom: 4px; }
+
 /** navbar **/
 .navbar-toolbar.navbar-static-top.navbar-default {
 	box-shadow: 0 0 3px rgba(153, 153, 153, 0.75);

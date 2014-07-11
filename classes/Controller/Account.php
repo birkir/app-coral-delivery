@@ -49,7 +49,7 @@ class Controller_Account extends Controller_Template {
 				$link = URL::base().'/account/confirm/email?hash='.$encrypt->encode(json_encode(array($this->user->id, time(), $email)));
 
 				// Send email to new email address
-				mail($email, 'Confirm your new email address', View::factory('account/mail/confirm-email')->set('link', $link), implode("\r\n", array(
+				mail($email, 'Confirm your new email address', View::factory('mail/account/confirm-email')->set('link', $link), implode("\r\n", array(
 					'MIME-Version: 1.0',
 					'Content-type: text/html; charset=utf-8',
 					'To: '.$this->user->fullname.' <'.$email.'>',
@@ -63,7 +63,7 @@ class Controller_Account extends Controller_Template {
 				$link = URL::base().'/account/confirm/password?hash='.$encrypt->encode(json_encode(array($this->user->id, time(), $password)));
 
 				// Send email to new email address
-				mail($email, 'Confirm your password change', View::factory('account/mail/confirm-password')->set('link', $link), implode("\r\n", array(
+				mail($email, 'Confirm your password change', View::factory('mail/account/confirm-password')->set('link', $link), implode("\r\n", array(
 					'MIME-Version: 1.0',
 					'Content-type: text/html; charset=utf-8',
 					'To: '.$this->user->fullname.' <'.$email.'>',
@@ -196,26 +196,34 @@ class Controller_Account extends Controller_Template {
 		$this->view = View::factory('account/register')
 		->bind('errors', $errors);
 
+		// Set template flags
+		$this->template->hide_header = TRUE;
+		$this->template->no_main = TRUE;
+
 		if ($this->request->method() === HTTP_Request::POST)
 		{
 			try
 			{
+				// Get post data
+				$post = $this->request->post();
+
 				// Create user using Auth create_user method
 				ORM::factory('User')
-				->create_user($this->request->post(), array('email', 'password'));
+				->create_user($post, array('email', 'password'));
 
 				// Add logged in role
 				$item->add('roles', ORM::factory('Role', array('name' => 'login')));
 			}
 			catch (ORM_Validation_Exception $e)
 			{
-				$errors = $e;
+				// Set errors
+				$errors = $e->errors('models');
 			}
 		}
 	}
 
 	/**
-	 * Logout controller
+	 * Logs the user out
 	 * 
 	 * @uses   HTTP
 	 * @return void
@@ -226,7 +234,25 @@ class Controller_Account extends Controller_Template {
 		$this->auth->logout();
 
 		// Redirect to login
-		return HTTP::redirect('account/login');
+		HTTP::redirect('account/login');
+	}
+
+	/**
+	 * Reset user password
+	 * 
+	 * @uses   HTTP
+	 * @return void
+	 */
+	public function action_resetpassword()
+	{
+		// Setup register form
+		$this->view = View::factory('account/reset-password')
+		->bind('errors', $errors);
+
+		// Set template flags
+		$this->template->hide_header = TRUE;
+		$this->template->no_main = TRUE;
+
 	}
 
 	/**
@@ -299,9 +325,21 @@ class Controller_Account extends Controller_Template {
 				if ( ! $user->loaded())
 				{
 					// Create User
-					$user->email = Arr::get($data, 'email');
-					$user->fullname = Arr::get($data, 'name');
-					$user->save();
+					try
+					{
+						$user->email = Arr::get($data, 'email');
+						$user->fullname = Arr::get($data, 'name');
+						$user->password = 'oauth-only';
+						$user->save();
+
+						$role = ORM::factory('Role', array('name' => 'login'));
+						$user->add('roles', $role);
+					}
+					catch (ORM_Validation_Exception $e)
+					{
+						echo Debug::vars($e->errors());
+						return;
+					}
 				}
 
 				// Assign this method to user oauths
@@ -318,6 +356,21 @@ class Controller_Account extends Controller_Template {
 
 			// Login user
 			Auth::instance()->force_login($auth->user);
+
+			// Token data
+			$data = array(
+				'user_id'    => $auth->user->pk(),
+				'expires'    => time() + 1209600,
+				'user_agent' => sha1(Request::$user_agent),
+			);
+
+			// Create a new autologin token
+			$token = ORM::factory('User_Token')
+						->values($data)
+						->create();
+
+			// Set the autologin cookie
+			Cookie::set('authautologin', $token->token, 1209600);
 
 			// Redirect to profile
 			return HTTP::redirect('account');
@@ -355,47 +408,6 @@ class Controller_Account extends Controller_Template {
 
 		// Redirect to account profile
 		HTTP::redirect('account');
-	}
-
-
-	public function action_test()
-	{
-		if ( ! empty($this->request->param('id')))
-		{
-			$request = Request::factory('http://www.17track.net/f/MyCaptchaHandler.ashx?get=validationresult&i='.$this->request->param('id').'&d=0.1563');
-		
-			$request->client()
-			->options(CURLOPT_COOKIEJAR, APPPATH.'cache/17track.cookie')
-			->options(CURLOPT_COOKIEFILE, APPPATH.'cache/17track.cookie')
-			->options(CURLOPT_FOLLOWLOCATION, TRUE);
-
-			$response = $request->execute();
-
-			echo Debug::vars($response);
-
-			$ch = curl_init();
-			curl_setopt($ch, CURLOPT_URL, 'http://s1.17track.net/Rest/HandlerTrackPost.ashx?callback=data&lo=www.17track.net&pt=0&num=RC971420354CN&hs=207f7ee621120a7d1a84775ca5c33aea');
-			curl_setopt($ch, CURLOPT_COOKIEJAR, APPPATH.'cache/17track.cookie');
-			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-			$body = curl_exec($ch);
-
-			echo Debug::vars($body);
-			exit;
-		}
-
-		$request = Request::factory('http://www.17track.net/f/MyCaptchaHandler.ashx?get=image&d=&d=0.1563');
-
-		$request->client()
-		->options(CURLOPT_COOKIEJAR, APPPATH.'cache/17track.cookie')
-		->options(CURLOPT_COOKIEFILE, APPPATH.'cache/17track.cookie')
-		->options(CURLOPT_FOLLOWLOCATION, TRUE);
-
-		$image = $request->execute();
-
-		$this->auto_render = FALSE;
-		$this->response->headers('content-type', 'image/jpeg');
-		$this->view = $image->body();
 	}
 
 } // End Account

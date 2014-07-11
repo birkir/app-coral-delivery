@@ -381,9 +381,13 @@ $(document).on('ready', function () {
 });
 
 $(window).on('resize', function () {
-	this.scrollTrigger = $('.filter-floating').offset().top;
+	$('.filter-floating').each(function (){ 
+		window.scrollTrigger = $(this).offset().top;
+	})
 })
 
 $(window).on('scroll', function () {
-	$('.filter-floating')[(window.scrollY > this.scrollTrigger) ? 'addClass' : 'removeClass']('active');
+	if (this.scrollTrigger) {
+		$('.filter-floating')[(window.scrollY > this.scrollTrigger) ? 'addClass' : 'removeClass']('active');
+	}
 })
