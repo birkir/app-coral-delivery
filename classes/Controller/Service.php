@@ -14,7 +14,8 @@ class Controller_Service extends Controller_Template {
 	 * Services available
 	 */
 	public static $methods = array(
-		'Aliexpress' => 'Aliexpress orders'
+		'Aliexpress' => 'Aliexpress.com',
+		'Sparkfun'   => 'Sparkfun.com'
 	);
 
 	/**
@@ -182,7 +183,27 @@ class Controller_Service extends Controller_Template {
 	 */
 	public function action_delete()
 	{
+		// Skip auto rendering
+		$this->auto_render = FALSE;
 
+		// Get user service with identity from params
+		$service = ORM::factory('User_Service', $this->request->param('id'));
+
+		if ( ! $service->loaded())
+		{
+			throw HTTP_Exception::factory(404, 'Service not found');
+		}
+
+		if ($service->user_id !== $this->user->id OR ! $this->user->is_admin())
+		{
+			throw HTTP_Exception::factory(401, 'Not authorized to delete this service');
+		}
+
+		// Delete service
+		$servoce->delete();
+
+		// Redirect to services list
+		return HTTP::redirect('service');
 	}
 
 }

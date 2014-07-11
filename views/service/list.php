@@ -21,7 +21,7 @@
 				<td data-label="<?=__('Last updated');?>"><?=$service->updated_at;?></td>
 				<td data-label="<?=__('Actions');?>">
 					<?=HTML::anchor('service/edit/'.$service->id, 'Edit', array('class' => 'btn btn-info btn-sm', 'title' => 'Edit service'));?>
-					<?=HTML::anchor('service/delete/'.$service->id, 'Delete', array('class' => 'btn btn-danger btn-sm', 'title' => 'Delete service'));?>
+					<?=HTML::anchor('service/delete/'.$service->id, 'Delete', array('class' => 'btn btn-danger btn-sm', 'title' => 'Delete service', 'onclick' => 'return confirm(\''.__('Are you sure you want to delete this service?').'\');'));?>
 				</td>
 			</tr>
 		<?php endforeach; ?>
