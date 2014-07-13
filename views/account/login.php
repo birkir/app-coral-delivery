@@ -11,7 +11,7 @@
 				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
 				<strong><?=__('Unable to login');?>!</strong><br>
 				<?=__('Please check email or password and try again or :lostpwd', array(
-				':lostpwd' => HTML::anchor('account/resetpassword', __('reset your password'))));?>.
+				':lostpwd' => HTML::anchor('reset', __('reset your password'))));?>.
 			</div>
 		<?php endif; ?>
 
@@ -23,7 +23,7 @@
 			</div>
 		<?php endif; ?>
 
-		<?=Form::open('account/login', array('method' => 'post', 'role' => 'form', 'class' => 'main', 'style' => 'border-bottom-width: 2px; margin-bottom: 10px'));?>
+		<?=Form::open('login', array('method' => 'post', 'role' => 'form', 'class' => 'main', 'style' => 'border-bottom-width: 2px; margin-bottom: 10px'));?>
 
 			<div class="form-group">
 				<?=Form::label('loginEmail', __('E-Mail address'), array('class' => 'control-label'));?>
@@ -45,20 +45,20 @@
 
 			<div class="text-center" style="width: 200px; background: #fff; margin: 20px auto -30px auto; position: relative;">
 				<?=__(':signup or social network', array(
-					':signup' => HTML::anchor('account/register', __('sign up'), array('style' => 'font-weight: bold'))));?>
+					':signup' => HTML::anchor('register', __('sign up'), array('style' => 'font-weight: bold'))));?>
 			</div>
 
 			<hr />
 
 			<div class="text-center social-authentication" style="padding-top: 10px;">
-				<a href="/account/oauth/facebook" class="btn btn-lg btn-facebook"><i class="fa fa-facebook"></i></a>
-				<a href="/account/oauth/google" class="btn btn-lg btn-google"><i class="fa fa-google"></i></a>
-				<a href="/account/oauth/github" class="btn btn-lg btn-github"><i class="fa fa-github-alt"></i></a>
+				<a href="/link/facebook" class="btn btn-lg btn-facebook"><i class="fa fa-facebook"></i></a>
+				<a href="/link/google" class="btn btn-lg btn-google"><i class="fa fa-google"></i></a>
+				<a href="/link/github" class="btn btn-lg btn-github"><i class="fa fa-github-alt"></i></a>
 			</div>
 
 		<?=Form::close();?>
 		<div class="text-center">
-			<a href="/account/resetpassword" class="text-muted"><small>lost password?</small></a>
+			<a href="/reset" class="text-muted"><small>lost password?</small></a>
 		</div>
 	</div>
 </div>

@@ -1,21 +1,11 @@
 <div class="page-header">
 	<div class="pull-right btn-toolbar">
-		<?=HTML::anchor('hook/list/'.$package->tracking_number, __('Manage hooks'), array('class' => 'btn btn-lg btn-info btn-mobile-block'));?>
-		<?=HTML::anchor('package/edit/'.$package->tracking_number, __('Edit package'), array('class' => 'btn btn-lg btn-warning btn-mobile-block'));?>
+		<?=HTML::anchor('package/'.$package->hashid().'/hooks', __('Manage hooks'), array('class' => 'btn btn-lg btn-info btn-mobile-block'));?>
+		<?=HTML::anchor('package/'.$package->hashid().'/edit', __('Edit package'), array('class' => 'btn btn-lg btn-warning btn-mobile-block'));?>
 		<?php if ($user->is_admin()): ?>
-			<div class="btn-group btn-mobile-left">
-				<?=HTML::anchor('package/refresh/'.$package->tracking_number, __('Refresh'), array('class' => 'btn btn-lg btn-primary col-xs-9'));?>
-				<button type="button" class="btn btn-primary btn-lg col-xs-3 dropdown-toggle" data-toggle="dropdown">
-					<span class="caret"></span>
-					<span class="sr-only"><?=__('Toggle Dropdown');?></span>
-				</button>
-				<ul class="dropdown-menu" role="menu">
-					<li><?=HTML::anchor('package/refresh/'.$package->tracking_number.'?direction='.Carrier::ORIGIN, __('Origin carrier only'));?></li>
-					<li><?=HTML::anchor('package/refresh/'.$package->tracking_number.'?direction='.Carrier::DESTINATION, __('Destination carrier only'));?></li>
-				</ul>
-			</div>
+			<?=HTML::anchor('package/'.$package->hashid().'/reload', __('Reload'), array('class' => 'btn btn-lg btn-primary btn-mobile-block'));?>
 		<?php endif; ?>
-		<?=HTML::anchor('package', __('Go back'), array('class' => 'btn btn-lg btn-default btn-mobile-right'));?>
+		<?=HTML::anchor('packages', __('Go back'), array('class' => 'btn btn-lg btn-default btn-mobile-block'));?>
 	</div>
 	<h2><?=__('Package detail');?></h2>
 </div>
@@ -103,6 +93,13 @@
 					<td data-label="<?=__('Message');?>"><?=$status->message;?></td>
 				</tr>
 			<?php endforeach; ?>
+			<?php if (count($destination) === 0): ?>
+				<tr>
+					<td colspan="4" class="text-center well">
+					<?=__('No status report available');?>
+					</td>
+				</tr>
+			<?php endif; ?>
 		</tbody>
 	</table>
 
@@ -136,6 +133,13 @@
 				<td data-label="<?=__('Message');?>"><?=$status->message;?></td>
 			</tr>
 		<?php endforeach; ?>
+		<?php if (count($origin) === 0): ?>
+			<tr>
+				<td colspan="4" class="text-center well">
+					<?=__('No status report available');?>
+				</td>
+			</tr>
+		<?php endif; ?>
 	</tbody>
 </table>
 

@@ -23,7 +23,7 @@
 			</div>
 		<?php endif; ?>
 
-		<?=Form::open('account/register', array('method' => 'post', 'role' => 'form', 'class' => 'main', 'style' => 'border-bottom-width: 2px; margin-bottom: 10px'));?>
+		<?=Form::open('register', array('method' => 'post', 'role' => 'form', 'class' => 'main', 'style' => 'border-bottom-width: 2px; margin-bottom: 10px'));?>
 
 			<div class="form-group">
 				<?=Form::label('registerName', __('Full name'), array('class' => 'control-label'));?>
@@ -48,7 +48,7 @@
 			<div class="form-group">
 				<?=Form::button(NULL, __('Register'), array('class' => 'btn btn-lg btn-info', 'type' => 'submit', 'style' => 'min-width: 110px'));?>
 				&nbsp; &nbsp;
-				<?=HTML::anchor('account/login', __('Cancel')); ?>
+				<?=HTML::anchor('login', __('Cancel')); ?>
 			</div>
 
 		<?=Form::close();?>

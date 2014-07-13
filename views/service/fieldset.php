@@ -1,11 +1,11 @@
 <div class="page-header">
-	<div class="pull-right btn-toolbar">
-		<?=HTML::anchor('service', __('Cancel'), array('class' => 'btn btn-lg btn-default'));?>
+	<div class="pull-right">
+		<?=HTML::anchor('services', __('Cancel'), array('class' => 'btn btn-lg btn-default'));?>
 	</div>
 	<h2><?=__($service->loaded() ? 'Edit service' : 'Add service');?></h2>
 </div>
 
-<?=Form::open($service->loaded() ? 'service/edit/'.$service->id : 'service/create', array('method' => 'post', 'role' => 'form', 'class' => 'form-horizontal'));?>
+<?=Form::open($service->loaded() ? 'service/'.$service->id.'/edit' : 'service/add', array('method' => 'post', 'role' => 'form', 'class' => 'form-horizontal'));?>
 
 	<?php if (count($errors)): ?>
 		<div class="alert alert-warning">
@@ -52,8 +52,8 @@
 	</div>
 
 	<div class="form-group">
-		<div class="col-sm-offset-2" style="padding-left: 15px">
-			<?=Form::button(NULL, $service->loaded() ? __('Save changes') : __('Add service'), array('class' => 'btn btn-lg btn-primary', 'type' => 'submit'));?>
+		<div class="col-sm-offset-2 col-xs-12" style="padding-left: 15px">
+			<?=Form::button(NULL, $service->loaded() ? __('Save changes') : __('Add service'), array('class' => 'btn btn-lg btn-primary btn-mobile-block', 'type' => 'submit'));?>
 		</div>
 	</div>
 

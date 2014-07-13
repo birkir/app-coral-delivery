@@ -13,7 +13,7 @@
 			</div>
 		<?php endif; ?>
 
-		<?=Form::open('account/resetpassword', array('method' => 'post', 'role' => 'form', 'class' => 'main', 'style' => 'border-bottom-width: 2px; margin-bottom: 10px'));?>
+		<?=Form::open('reset', array('method' => 'post', 'role' => 'form', 'class' => 'main', 'style' => 'border-bottom-width: 2px; margin-bottom: 10px'));?>
 
 			<div class="form-group">
 				<?=Form::label('registerEmail', __('E-Mail address'), array('class' => 'control-label'));?>
@@ -23,7 +23,7 @@
 			<div class="form-group">
 				<?=Form::button(NULL, __('Reset password'), array('class' => 'btn btn-lg btn-info', 'type' => 'submit', 'style' => 'min-width: 110px'));?>
 				&nbsp; &nbsp;
-				<?=HTML::anchor('account/login', __('Cancel')); ?>
+				<?=HTML::anchor('login', __('Cancel')); ?>
 			</div>
 
 		<?=Form::close();?>

@@ -40,7 +40,7 @@ class Controller_Service extends Controller_Template {
 	 *
 	 * @return void
 	 */
-	public function action_create()
+	public function action_add()
 	{
 		// Setup view
 		$this->view = View::factory('service/fieldset')
@@ -70,7 +70,7 @@ class Controller_Service extends Controller_Template {
 			$service->values($post)->save();
 
 			// Redirect to detail page
-			return HTTP::redirect('service/detail/'.$service->id);
+			return HTTP::redirect('service/'.$service->id);
 		}
 	}
 
@@ -200,10 +200,10 @@ class Controller_Service extends Controller_Template {
 		}
 
 		// Delete service
-		$servoce->delete();
+		$service->delete();
 
 		// Redirect to services list
-		return HTTP::redirect('service');
+		return HTTP::redirect('services');
 	}
 
 }

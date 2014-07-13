@@ -1,9 +1,9 @@
 <div class="page-header">
 	<div class="pull-right btn-toolbar">
 		<?php if ($hook->loaded()): ?>
-			<?=HTML::anchor('hook/delete/'.$hook->id, __('Delete'), array('class' => 'btn btn-lg btn-danger', 'onclick' => 'return confirm(\''.__('Are you sure you want to delete this hook?').'\');'));?>
+			<?=HTML::anchor('package/'.$package->hashid().'/hook/'.$hook->id.'/delete', __('Delete'), array('class' => 'btn btn-lg btn-danger', 'onclick' => 'return confirm(\''.__('Are you sure you want to delete this hook?').'\');'));?>
 		<?php endif; ?>
-		<?=HTML::anchor('hook/list/'.$package->tracking_number, __('Cancel'), array('class' => 'btn btn-lg btn-default'));?>
+		<?=HTML::anchor('package/'.$package->hashid().'/hooks', __('Cancel'), array('class' => 'btn btn-lg btn-default'));?>
 	</div>
 	<h2><?=__($hook->loaded() ? 'Edit hook' : 'Create hook');?></h2>
 </div>

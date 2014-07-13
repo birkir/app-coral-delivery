@@ -95,9 +95,9 @@
 			<tbody>
 				<?php foreach ($user->auths->find_all() as $item): ?>
 					<tr>
-						<td><i class="fa fa-<?=$item->method;?>"></i>&nbsp;&nbsp;<?=UTF8::ucfirst($item->method);?></td>
-						<td><?=$item->updated_at;?></td>
-						<td><?=HTML::anchor('account/unlink/'.$item->id, __('unlink'), array('onclick' => 'return confirm(\''.__('Are you sure you want to delete this linked authentication?').'\');'));?></td>
+						<td data-label="<?=__('Name');?>"><i class="fa fa-<?=$item->method;?>"></i>&nbsp;&nbsp;<?=UTF8::ucfirst($item->method);?></td>
+						<td data-label="<?=__('Last used');?>"><?=$item->updated_at;?></td>
+						<td data-label="<?=__('Actions');?>"><?=HTML::anchor('unlink/'.$item->id, __('unlink'), array('onclick' => 'return confirm(\''.__('Are you sure you want to delete this linked authentication?').'\');'));?></td>
 					</tr>
 				<?php endforeach; ?>
 			</tbody>

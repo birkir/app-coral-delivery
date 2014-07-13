@@ -3,6 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="mobile-web-app-capable" content="yes">
 		<meta name="description" content="">
 		<meta name="author" content="">
 		<title>Coral Delivery</title>
@@ -11,8 +12,11 @@
 		<link href="/media/css/todc-bootstrap.min.css" rel="stylesheet">
 		<link href="/media/css/font-awesome.min.css" rel="stylesheet">
 		<link href="/media/css/select2.css" rel="stylesheet">
-		<link href="/media/css/coral.css" rel="stylesheet">
+		<link href="/media/css/coral.css?t=1" rel="stylesheet">
 		<link href="/media/img/favicon.png" rel="shortcut icon">
+		<link href="/media/img/128x128.png" rel="icon" sizes="128x128">
+		<link href="/media/img/128x128.png" rel="apple-touch-icon" sizes="128x128">
+		<link href="/media/img/128x128.png" rel="apple-touch-icon-precomposed" sizes="128x128">
 		<!--[if lt IE 9]>
 			<script src="/media/js/html5shiv.js"></script>
 			<script src="/media/js/respond.min.js"></script>
@@ -31,13 +35,13 @@
 					<div class="collapse navbar-collapse coral-navbar-collapse">
 						<ul class="nav navbar-nav">
 							<?php if ($auth->logged_in()): ?>
-								<li<?=Nav::ac('Package');?>><?=HTML::anchor('package', __('Packages'));?></li>
-								<li<?=Nav::ac('Service');?>><?=HTML::anchor('service', __('Services'));?></li>
-								<li<?=Nav::ac('Account', 'index');?>><?=HTML::anchor('account', __('Profile'));?></li>
-								<li><?=HTML::anchor('account/logout', __('Logout'));?></li>
+								<li<?=Nav::ac('Package');?>><?=HTML::anchor('packages', __('Packages'));?></li>
+								<li<?=Nav::ac('Service');?>><?=HTML::anchor('services', __('Services'));?></li>
+								<li<?=Nav::ac('Account', 'index');?>><?=HTML::anchor('profile', __('Profile'));?></li>
+								<li><?=HTML::anchor('logout', __('Logout'));?></li>
 							<?php else: ?>
-								<li<?=Nav::ac('Account', 'login');?>><?=HTML::anchor('account/login', __('Login'));?></li>
-								<li<?=Nav::ac('Account', 'register');?>><?=HTML::anchor('account/register', __('Register'));?></li>
+								<li<?=Nav::ac('Account', 'login');?>><?=HTML::anchor('login', __('Login'));?></li>
+								<li<?=Nav::ac('Account', 'register');?>><?=HTML::anchor('register', __('Register'));?></li>
 							<?php endif; ?>
 						</ul>
 					</div>
@@ -55,6 +59,8 @@
 		================================================== -->
 		<!-- Placed at the end of the document so the pages load faster -->
 		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+		<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+		<script>google.load("visualization", "1", { packages:["corechart"]});</script>
 		<script src="/media/js/bootstrap.min.js"></script>
 		<script src="/media/js/tablesorter.js"></script>
 		<script src="/media/js/select2.js"></script>

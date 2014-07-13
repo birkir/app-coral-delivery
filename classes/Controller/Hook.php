@@ -14,7 +14,8 @@ class Controller_Hook extends Controller_Template {
 	 * Services available
 	 */
 	public static $methods = array(
-		'Emailattachment' => 'Email with attachment'
+		'Emailattachment' => 'Email with attachment',
+		'SMS'             => 'Text message'
 	);
 
 	/**
@@ -22,14 +23,14 @@ class Controller_Hook extends Controller_Template {
 	 *
 	 * @return void
 	 */
-	public function action_list()
+	public function action_index()
 	{
 		$this->view = View::factory('hook/list')
 		->bind('package', $package)
 		->bind('hooks', $hooks);
 
 		// Find package
-		$package = ORM::factory('Package', array('tracking_number' => $this->request->param('id')));
+		$package = ORM::factory('Package', $this->request->param('id'));
 
 		if ( ! $package->loaded())
 		{
@@ -50,7 +51,7 @@ class Controller_Hook extends Controller_Template {
 	 *
 	 * @return void
 	 */
-	public function action_create()
+	public function action_add()
 	{
 		// Setup view
 		$this->view = View::factory('hook/fieldset')
@@ -61,7 +62,7 @@ class Controller_Hook extends Controller_Template {
 		->set('methods', self::$methods);
 
 		// Find package
-		$package = ORM::factory('Package', array('tracking_number' => $this->request->param('id')));
+		$package = ORM::factory('Package', $this->request->param('id'));
 
 		if ( ! $package->loaded())
 		{
@@ -112,7 +113,7 @@ class Controller_Hook extends Controller_Template {
 		->set('methods', self::$methods);
 
 		// Create Hook model
-		$hook = ORM::factory('Package_Hook', $this->request->param('id'));
+		$hook = ORM::factory('Package_Hook', $this->request->param('hook'));
 
 		// Get package from hook
 		$package = $hook->package;
@@ -170,7 +171,7 @@ class Controller_Hook extends Controller_Template {
 		$this->auto_render = FALSE;
 
 		// Get hook with identity from params
-		$hook = ORM::factory('Package_Hook', $this->request->param('id'));
+		$hook = ORM::factory('Package_Hook', $this->request->param('hook'));
 
 		// Get package from hook
 		$package = $hook->package;
@@ -189,20 +190,7 @@ class Controller_Hook extends Controller_Template {
 		$hook->delete();
 
 		// Redirect to hook list
-		return HTTP::redirect('hook/list/'.$package->tracking_number);
-	}
-
-	/**
-	 * Test the email hook
-	 */
-	public function action_test()
-	{
-		if ( ! $this->user->is_admin())
-			throw HTTP_Exception::factory(401, 'Not authorized');
-
-		$foo = Hook::factory(ORM::factory('Package_Hook', 1));
-		$foo->send_email();
-
+		return HTTP::redirect('package/'.$package->hashid().'/hooks');
 	}
 
 } // End Hook Controller

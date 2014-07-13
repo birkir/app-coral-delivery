@@ -1,14 +1,14 @@
 <div class="page-header">
-	<div class="pull-right btn-toolbar">
+	<div class="pull-right">
 		<?php if ($package->loaded()): ?>
-			<?=HTML::anchor('package/delete/'.$package->tracking_number, __('Delete'), array('class' => 'btn btn-lg btn-danger', 'data-remote' => 'true', 'data-confirm' => __('Are you sure you want to delete this package?')));?>
+			<?=HTML::anchor('package/'.$package->hashid().'/delete', __('Delete'), array('class' => 'btn btn-lg btn-danger', 'onclick' => 'return confirm(\''.__('Are you sure you want to delete this package?').'\');'));?>
 		<?php endif; ?>
-		<?=HTML::anchor('package'.($package->loaded() ? '/detail/'.$package->tracking_number : ''), __('Cancel'), array('class' => 'btn btn-lg btn-default'));?>
+		<?=HTML::anchor($package->loaded() ? 'package/'.$package->hashid() : 'packages', __('Cancel'), array('class' => 'btn btn-lg btn-default'));?>
 	</div>
-	<h2><?=__($package->loaded() ? 'Edit package' : 'Create package');?></h2>
+	<h2><?=__($package->loaded() ? 'Edit package' : 'Add package');?></h2>
 </div>
 
-<?=Form::open($package->loaded() ? 'package/edit/'.$package->tracking_number : 'package/create', array('method' => 'post', 'role' => 'form', 'class' => 'form-horizontal'));?>
+<?=Form::open($package->loaded() ? 'package/'.$package->hashid().'/edit' : 'package/add', array('method' => 'post', 'role' => 'form', 'class' => 'form-horizontal'));?>
 
 	<?php if (count($errors)): ?>
 		<div class="alert alert-warning">
@@ -27,16 +27,42 @@
 	</div>
 
 	<div class="form-group">
-		<?=Form::label('packageOriginCarrier', __('Origin carrier').$re, array('class' => 'col-sm-2 control-label'));?>
+		<?=Form::label('packageCarrier', __('Carrier').$re, array('class' => 'col-sm-2 control-label'));?>
 		<div class="col-sm-3">
-			<?=Form::select('origin_carrier_id', array('' => '') + $carriers, $package->origin_carrier_id, array('placeholder' => 'Select carrier', 'class' => 'form-control', 'id' => 'packageOriginCarrier'));?>
+			<select name="carrier" id="packageCarrier" class="form-control">
+				<optgroup label="<?=__('Express');?>">
+					<?php foreach ($carriers as $carrier): ?>
+						<?php if ($carrier->express == '1'): ?>
+							<?php $selected = $package->loaded() ? ($package->origin_carrier_id == $carrier->id) : FALSE; ?>
+							<option data-express="true" value="<?=$carrier->id;?>"<?=($selected ? ' selected="selected"' : '');?>><?=$carrier->name;?></option>
+						<?php endif; ?>
+					<?php endforeach; ?>
+				</optgroup>
+				<optgroup label="<?=__('Global');?>">
+					<?php foreach ($carriers as $carrier): ?>
+						<?php if ($carrier->express == '0'): ?>
+							<?php $selected = $package->loaded() ? ($package->origin_carrier_id == $carrier->id) : (ORM::factory('Carrier', array('driver' => NULL))->id == $carrier->id); ?>
+							<option data-global="true" value="<?=$carrier->id;?>"<?=($selected ? ' selected="selected"' : '');?>><?=$carrier->name;?></option>
+						<?php endif; ?>
+					<?php endforeach; ?>
+				</optgroup>
+			</select>
 		</div>
 	</div>
 
 	<div class="form-group">
-		<?=Form::label('packageDestinationCarrier', __('Destination carrier').$re, array('class' => 'col-sm-2 control-label'));?>
+		<?=Form::label('packageCarrier2', __('Destination Carrier').$re, array('class' => 'col-sm-2 control-label'));?>
 		<div class="col-sm-3">
-			<?=Form::select('destination_carrier_id', array('' => 'Same as origin carrier') + $carriers, $package->destination_carrier_id, array('class' => 'form-control', 'id' => 'packageDestinationCarrier'));?>
+			<select name="carrier2" id="packageCarrier2" class="form-control">
+				<optgroup label="<?=__('Global');?>">
+					<?php foreach ($carriers as $carrier): ?>
+						<?php if ($carrier->express == '0'): ?>
+							<?php $selected = $package->loaded() ? ($package->destination_carrier_id == $carrier->id) : (ORM::factory('Carrier', array('driver' => NULL))->id == $carrier->id); ?>
+							<option value="<?=$carrier->id;?>"<?=($selected ? ' selected="selected"' : '');?>><?=$carrier->name;?></option>
+						<?php endif; ?>
+					<?php endforeach; ?>
+				</optgroup>
+			</select>
 		</div>
 	</div>
 
@@ -65,8 +91,8 @@
 	</div>
 
 	<div class="form-group">
-		<div class="col-sm-offset-2" style="padding-left: 15px">
-			<?=Form::button(NULL, $package->loaded() ? __('Save changes') : __('Add package'), array('class' => 'btn btn-lg btn-primary', 'type' => 'submit'));?>
+		<div class="col-sm-offset-2 col-xs-12" style="padding-left: 15px">
+			<?=Form::button(NULL, $package->loaded() ? __('Save changes') : __('Add package'), array('class' => 'btn btn-lg btn-primary btn-mobile-block', 'type' => 'submit'));?>
 		</div>
 	</div>
 

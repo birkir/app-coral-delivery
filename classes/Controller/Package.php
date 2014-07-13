@@ -25,7 +25,6 @@ class Controller_Package extends Controller_Template {
 
 		// Find packages
 		$packages = $this->user->packages
-		->where('deleted_at', 'IS', DB::expr('NULL'))
 		->order_by('state', 'ASC')
 		->order_by('completed_at', 'DESC')
 		->order_by('dispatched_at', 'ASC')
@@ -39,11 +38,11 @@ class Controller_Package extends Controller_Template {
 	}
 
 	/**
-	 * Create package
+	 * Add package
 	 *
 	 * @return void
 	 */
-	public function action_create()
+	public function action_add()
 	{
 		// Setup view
 		$this->view = View::factory('package/fieldset')
@@ -53,9 +52,9 @@ class Controller_Package extends Controller_Template {
 
 		// Find carriers
 		$carriers = ORM::factory('Carrier')
+		->order_by('express', 'DESC')
 		->order_by('name', 'ASC')
-		->find_all()
-		->as_array('id', 'name');
+		->find_all();
 
 		// Create new package
 		$package = ORM::factory('Package');
@@ -65,8 +64,21 @@ class Controller_Package extends Controller_Template {
 			// Set package owner
 			$package->user_id = $this->user->id;
 			$post = $this->request->post();
-			$post['destination_carrier_id'] = Arr::get($post, 'destination_carrier_id', $post['origin_carrier_id']);
 
+			// Find carriers
+			$carrier = ORM::factory('Carrier', Arr::get($post, 'carrier'));
+			$carrier2 = ORM::factory('Carrier', Arr::get($post, 'carrier2'));
+
+			if ( ! $carrier->loaded() OR ($carrier->express == '0' AND ! $carrier2->loaded()))
+			{
+				$errors = array('Carrier was not found, please try again.');
+				return;
+			}
+
+			// Set carriers 
+			$post['origin_carrier_id'] = $carrier->id;
+			$post['destination_carrier_id'] = ($carrier->express == '1') ? NULL : $carrier2->id;
+			
 			try
 			{
 				// Set package values
@@ -82,7 +94,7 @@ class Controller_Package extends Controller_Template {
 			}
 
 			// Redirect to package detail page
-			return HTTP::redirect('package/detail/'.$package->tracking_number);
+			return HTTP::redirect('package/'.$package->hashid());
 		}
 	}
 
@@ -101,12 +113,12 @@ class Controller_Package extends Controller_Template {
 
 		// Find carriers
 		$carriers = ORM::factory('Carrier')
+		->order_by('express', 'DESC')
 		->order_by('name', 'ASC')
-		->find_all()
-		->as_array('id', 'name');
+		->find_all();
 
 		// Create new package
-		$package = ORM::factory('Package', array('tracking_number' => $this->request->param('id')));
+		$package = ORM::factory('Package', $this->request->param('id'));
 
 		if ($this->request->method() === HTTP_Request::POST)
 		{
@@ -115,10 +127,19 @@ class Controller_Package extends Controller_Template {
 				// Get post values
 				$post = $this->request->post();
 
-				if (empty(Arr::get($post, 'destination_carrier_id')))
+				// Find carriers
+				$carrier = ORM::factory('Carrier', Arr::get($post, 'carrier'));
+				$carrier2 = ORM::factory('Carrier', Arr::get($post, 'carrier2'));
+
+				if ( ! $carrier->loaded() OR ($carrier->express == '0' AND ! $carrier2->loaded()))
 				{
-					$post['destination_carrier_id'] = NULL;
+					$errors = array('Carrier was not found, please try again.');
+					return;
 				}
+
+				// Set carriers 
+				$post['origin_carrier_id'] = $carrier->id;
+				$post['destination_carrier_id'] = ($carrier->express == '1') ? NULL : $carrier2->id;
 
 				if ($package->origin_carrier_id !== Arr::get($post, 'origin_carrier_id'))
 				{
@@ -151,7 +172,7 @@ class Controller_Package extends Controller_Template {
 			}
 
 			// Redirect to package detail page
-			return HTTP::redirect('package/detail/'.$package->tracking_number);
+			return HTTP::redirect('package/'.$package->hashid());
 		}
 	}
 
@@ -171,7 +192,7 @@ class Controller_Package extends Controller_Template {
 		->bind('destination', $destination);
 
 		// Get package with identity from params
-		$package = ORM::factory('Package', array('tracking_number' => $this->request->param('id')));
+		$package = ORM::factory('Package', $this->request->param('id'));
 
 		if ( ! $package->loaded())
 		{
@@ -204,38 +225,27 @@ class Controller_Package extends Controller_Template {
 	 *
 	 * @return void
 	 */
-	public function action_refresh()
+	public function action_reload()
 	{
 		if ( ! $this->user->is_admin())
 		{
 			throw HTTP_Exception::factory(401, 'Not allowed');
 		}
 
-		// Get direction query string
-		$direction = intval(Arr::get($this->request->query(), 'direction', -1));
-
 		// Get package with identity from params
-		$package = ORM::factory('Package', array('tracking_number' => $this->request->param('id')));
+		$package = ORM::factory('Package', $this->request->param('id'));
 
-		if ($direction === -1 OR $direction === Carrier::ORIGIN)
+		// Delete all statuses created by origin carrier driver
+		foreach ($package->status->where('direction', '=', Carrier::ORIGIN)->find_all() as $status) $status->delete();
+
+		// Track with destination carrier
+		Carrier::factory($package, Carrier::ORIGIN)->track();
+
+		// Only process carrier update once, if set as both.
+		if ($package->origin_carrier->express == '0' AND ($package->origin_carrier_id !== $package->destination_carrier_id))
 		{
-			foreach ($package->status->where('direction', '=', Carrier::ORIGIN)->find_all() as $status)
-			{
-				// Delete all statuses created by origin carrier driver
-				$status->delete();
-			}
-
-			// Track with destination carrier
-			Carrier::factory($package, Carrier::ORIGIN)->track();
-		}
-
-		if (($direction === -1 OR $direction === Carrier::DESTINATION) AND intval($package->destination_carrier_id) > 0)
-		{
-			foreach ($package->status->where('direction', '=', Carrier::DESTINATION)->find_all() as $status)
-			{
-				// Delete all statuses created by origin carrier driver
-				$status->delete();
-			}
+			// Delete all statuses created by origin carrier driver
+			foreach ($package->status->where('direction', '=', Carrier::DESTINATION)->find_all() as $status) $status->delete();
 
 			// Track with destination carrier
 			Carrier::factory($package, Carrier::DESTINATION)->track();
@@ -244,7 +254,7 @@ class Controller_Package extends Controller_Template {
 		// Save package
 		$package->save();
 
-		return HTTP::redirect('package/detail/'.$package->tracking_number);
+		return HTTP::redirect('package/'.$package->hashid());
 	}
 
 	/**
@@ -254,77 +264,27 @@ class Controller_Package extends Controller_Template {
 	 */
 	public function action_delete()
 	{
-		// Disable template auto rendering
+		// Skip auto rendering
 		$this->auto_render = FALSE;
 
-		// What response to give
-		$response = array(200, 'Ok');
-
 		// Get package with identity from params
-		$package = ORM::factory('Package', array('tracking_number' => $this->request->param('id')));
+		$package = ORM::factory('Package', $this->request->param('id'));
 
 		if ( ! $package->loaded())
 		{
-			// Set 404 response
-			$response = array(404, 'Package not found');
+			throw HTTP_Exception::factory(404, 'Service not found');
 		}
 
 		if ($package->user_id !== $this->user->id OR ! $this->user->is_admin())
 		{
-			// Set 401 response
-			$response = array(401, 'Not authorized to delete this package');
+			throw HTTP_Exception::factory(401, 'Not authorized to delete this service');
 		}
 
-		if ($response[0] === 200)
-		{
-			// Set deleted at timestamp
-			$package->deleted_at = date('Y-m-d H:i:s');
+		// Delete service
+		$package->delete();
 
-			// Save package
-			$package->save();
-		}
-
-		// Set HTTP status code
-		$this->response->status($response[0]);
-
-		// Set JSON response body
-		$this->response->body(json_encode(array(
-			'status'  => $response[0],
-			'message' => $response[1],
-			'data'    => array(
-				'redirect' => '/package'
-			)
-		)));
-	}
-
-	/**
-	 * Email status update to owner
-	 *
-	 * @return void
-	 */
-	public function action_email()
-	{
-		// Get package with identity from params
-		$package = ORM::factory('Package', array('tracking_number' => $this->request->param('id')));
-
-		if ( ! $package->loaded())
-		{
-			throw HTTP_Exception::factory(404, 'Package not found');
-		}
-
-		if ($package->user_id !== $this->user->id OR ! $this->user->is_admin())
-		{
-			throw HTTP_Exception::factory(401, 'Not authorized to view this package');
-		}
-
-		mail($package->user->email, 'Coral Delivery :: '.__('Status update for :tracking_number', array(':tracking_number' => $package->tracking_number)), View::factory('hook/mail/package-status-update')->set('package', $package), implode("\r\n", array(
-			'MIME-Version: 1.0',
-			'Content-type: text/html; charset=utf-8',
-			'To: '.$package->user->fullname.' <'.$package->user->email.'>',
-			'From: Coral Delivery <www-data@corona.forritun.org>'
-		)));
-
-		return HTTP::redirect('package/detail/'.$package->tracking_number);
+		// Redirect to services list
+		return HTTP::redirect('packages');
 	}
 
 } // End Package Controller

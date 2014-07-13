@@ -46,7 +46,7 @@ class Controller_Account extends Controller_Template {
 				}
 
 				// Attempt to update email
-				$link = URL::base().'/account/confirm/email?hash='.$encrypt->encode(json_encode(array($this->user->id, time(), $email)));
+				$link = URL::base().'/confirm/email/'.$encrypt->encode(json_encode(array($this->user->id, time(), $email)));
 
 				// Send email to new email address
 				mail($email, 'Confirm your new email address', View::factory('mail/account/confirm-email')->set('link', $link), implode("\r\n", array(
@@ -60,7 +60,7 @@ class Controller_Account extends Controller_Template {
 			if ( ! empty($password) AND ($password === $password_confirm))
 			{
 				// Attempt to update email
-				$link = URL::base().'/account/confirm/password?hash='.$encrypt->encode(json_encode(array($this->user->id, time(), $password)));
+				$link = URL::base().'/confirm/password/'.$encrypt->encode(json_encode(array($this->user->id, time(), $password)));
 
 				// Send email to new email address
 				mail($email, 'Confirm your password change', View::factory('mail/account/confirm-password')->set('link', $link), implode("\r\n", array(
@@ -181,7 +181,7 @@ class Controller_Account extends Controller_Template {
 
 		if ($this->auth->logged_in())
 		{
-			return HTTP::redirect('account');
+			return HTTP::redirect('profile');
 		}
 	}
 
@@ -234,7 +234,7 @@ class Controller_Account extends Controller_Template {
 		$this->auth->logout();
 
 		// Redirect to login
-		HTTP::redirect('account/login');
+		HTTP::redirect('login');
 	}
 
 	/**
@@ -243,7 +243,7 @@ class Controller_Account extends Controller_Template {
 	 * @uses   HTTP
 	 * @return void
 	 */
-	public function action_resetpassword()
+	public function action_reset()
 	{
 		// Setup register form
 		$this->view = View::factory('account/reset-password')
@@ -260,7 +260,7 @@ class Controller_Account extends Controller_Template {
 	 *
 	 * @return void
 	 */
-	public function action_oauth()
+	public function action_link()
 	{
 		if ($this->request->query('error'))
 		{
@@ -407,7 +407,7 @@ class Controller_Account extends Controller_Template {
 		$auth->delete();
 
 		// Redirect to account profile
-		HTTP::redirect('account');
+		HTTP::redirect('profile');
 	}
 
 } // End Account
