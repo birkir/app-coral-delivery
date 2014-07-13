@@ -147,7 +147,8 @@ class Carrier {
 	 * @param  int    Country #
 	 * @return string
 	 */
-	public static function country($id) {
+	public static function country($id)
+	{
 		return self::$_countries[$id];
 	}
 
@@ -380,6 +381,8 @@ class Carrier {
 				$status->coordinates = $item['location']['coordinates'];
 				$status->message = $item['message'];
 				$status->save();
+
+				echo Debug::vars($status);
 
 				return TRUE;
 			}
