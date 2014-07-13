@@ -5,6 +5,15 @@ $(document).on('ready', function () {
 		minimumResultsForSearch: 10
 	});
 
+	// Toggle destination carrier on/off
+	$('#packageCarrier').on('change', function () {
+		if ($(this).find('option:selected').data('express') === true) {
+			$('#packageCarrier2').attr('disabled', 'disabled')
+		} else {
+			$('#packageCarrier2').removeAttr('disabled')
+		}
+	}).trigger('change');
+
 	// Remote buttons
 	// ---
 	$('[data-remote]').on('click', function (e) {
@@ -81,15 +90,15 @@ $(document).on('ready', function () {
 
 		table.bind('filterEnd', function() {
 			filters = $.tablesorter.getFilters(table);
-			dataFilters.filter('[data-filter=4]').parent().removeClass('active');
-			if (dataFilters.filter('[data-filter=4][href="#'+filters[4]+'"]').eq(0).parent().addClass('active').length === 0) {
-				dataFilters.filter('[data-filter=4]:eq(0)').parent().addClass('active');
+			dataFilters.filter('[data-filter=5]').parent().removeClass('active');
+			if (dataFilters.filter('[data-filter=5][href="#'+filters[5]+'"]').eq(0).parent().addClass('active').length === 0) {
+				dataFilters.filter('[data-filter=5:eq(0)').parent().addClass('active');
 			}
-			if (filters[1] === '' && dataFilters.filter('[data-filter=1]').val() !== '') {
-				dataFilters.filter('[data-filter=1]').val('').trigger('change');
-			}
-			if (filters[2] === '' && dataFilters.filter('[data-filter=2]').val() !== '') {
+			if (filters[1] === '' && dataFilters.filter('[data-filter=2]').val() !== '') {
 				dataFilters.filter('[data-filter=2]').val('').trigger('change');
+			}
+			if (filters[2] === '' && dataFilters.filter('[data-filter=3]').val() !== '') {
+				dataFilters.filter('[data-filter=3]').val('').trigger('change');
 			}
 			$('.mobile-filters-toggle').trigger('click');
 		});
@@ -377,17 +386,44 @@ $(document).on('ready', function () {
 		}
 	});
 
+	$('[data-chart]').each(function () {
+
+		var container = $(this),
+			element = this,
+			chartType = container.data('chart'),
+		    chartData = window[container.data('json')] || {};
+
+		var data = [['Origin and destination', 'Collection', 'In transit']];
+
+		for (var name in chartData) {
+			data.push([name, chartData[name].collecting, chartData[name].transit]);
+		}
+
+      	google.setOnLoadCallback(function () {
+			data = google.visualization.arrayToDataTable(data);
+	        var chart = new google.visualization.ColumnChart(element);
+	        chart.draw(data, {
+	        	isStacked: true,
+				title: 'Transfer time',
+				hAxis: {
+					title: 'Days'
+				}
+			});
+      	});
+
+	});
+
 	$(window).trigger('resize');
 });
 
 $(window).on('resize', function () {
-	$('.filter-floating').each(function (){ 
-		window.scrollTrigger = $(this).offset().top;
+	$('.floating').each(function (){ 
+		window.scrollTrigger = $(this).offset().top - 50;
 	})
 })
 
 $(window).on('scroll', function () {
 	if (this.scrollTrigger) {
-		$('.filter-floating')[(window.scrollY > this.scrollTrigger) ? 'addClass' : 'removeClass']('active');
+		$('.floating')[(window.scrollY > this.scrollTrigger) ? 'addClass' : 'removeClass']('active');
 	}
 })

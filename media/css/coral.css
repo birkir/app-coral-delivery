@@ -259,8 +259,16 @@ li.list-group-item.active>a, li.list-group-item.active:hover>a, li.list-group-it
 
 /** mobile **/
 @media (max-width:767px) {
+	body {
+		padding-top: 65px;
+		background: #fff;
+	}
 	.navbar-toolbar.navbar-static-top.navbar-default  {
 		margin: 0;
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
 	}
 	.navbar-toolbar.navbar-static-top.navbar-default .navbar-header {
 		min-height: 50px;
@@ -361,30 +369,56 @@ li.list-group-item.active>a, li.list-group-item.active:hover>a, li.list-group-it
 	.table-block > tbody > tr > td:last-child:before {
 		border-bottom-left-radius: 2px;
 	}
+	.table-block > tbody > tr > td.mobile-row-header:before {
+		display: block;
+		width: 100%;
+		background: none;
+		box-shadow: inset 0 2px rgba(0,0,0,0.05);
+		border: 0;
+	}
+	.table-block > tbody > tr > td.mobile-row-header {
+		padding: 0;
+		max-height: 72px;
+		overflow: hidden;
+		display: block !important;
+		background: #f9f9f9 !important;
+	}
+	.mobile-row-header .photo {
+		width: 36%;
+		display: block;
+		float: left;
+		text-align: center;
+		max-height: 75px;
+		vertical-align: middle;
+		overflow: hidden;
+	}
+	.mobile-row-header .photo img {
+		height: 100%;
+		max-height: 100%;
+	}
+	.mobile-row-header .title {
+		font-size: 14px;
+		font-weight: 500;
+		text-overflow: ellipsis;
+		max-height: 62px;
+		overflow: hidden;
+		padding: 8px;
+	}
 
 	/** filters **/
-	.filter-floating {
-		position: absolute;
-		z-index: 999;
+	.floating.active {
+		position: fixed;
 		left: 0;
 		right: 0;
+		top: 50px;
+		z-index: 10;
 	}
-	.filter-floating.active {
-		position: fixed;
-		left: -15px;
-		right: -15px;
-		top: 0;
+	.floating.active .btn-lg {
+		padding: 5px 12px
 	}
-	.filter-floating.active .list-group {
-		padding-top: 2px;
-	}
-	.filter-floating.active .panel.panel-default {
-		border-radius: 0;
-		border-width: 0;
-		box-shadow: 0 200px rgba(0,0,0,.2);
-	}
-	.filter-floating .btn.btn-block {
-		border-radius: 0;
+	.floating.active h3 {
+		margin-top: 2px !important;
+		font-size: 18px;
 	}
 
 	/** package detail **/
@@ -395,7 +429,7 @@ li.list-group-item.active>a, li.list-group-item.active:hover>a, li.list-group-it
 		margin-bottom: 0;
 	}
 	.btn-mobile-block {
-		width: auto;
+		width: 100%;
 		margin: 0 0 10px;
 		display: block;
 	}

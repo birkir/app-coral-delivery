@@ -307,6 +307,7 @@ Version: 3.2 Timestamp: Mon Sep 10 10:38:04 PDT 2012
 
 .select2-results ul.select2-result-sub {
   margin: 0 0 0 0;
+  padding-left: 0;
 }
 
 .select2-results ul.select2-result-sub > li .select2-result-label { padding-left: 20px }
