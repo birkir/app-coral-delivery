@@ -79,6 +79,10 @@ if (isset($_SERVER['SERVER_PROTOCOL']))
 	HTTP::$protocol = $_SERVER['SERVER_PROTOCOL'];
 }
 
+// Set site url
+define('SITE_URL', 'http://delivery.pipe.is');
+define('SITE_NAME', 'Delivery Pipe');
+
 /**
  * Set Kohana::$environment if a 'KOHANA_ENV' environment variable has been supplied.
  *

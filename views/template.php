@@ -6,7 +6,7 @@
 		<meta name="mobile-web-app-capable" content="yes">
 		<meta name="description" content="">
 		<meta name="author" content="">
-		<title>Delivery Pipe</title>
+		<title><?=SITE_NAME;?></title>
 		<link href="http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,300italic,400italic,700italic" rel="stylesheet" type="text/css">
 		<link href="/media/css/bootstrap.min.css" rel="stylesheet">
 		<link href="/media/css/todc-bootstrap.min.css" rel="stylesheet">
@@ -30,7 +30,7 @@
 						<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".coral-navbar-collapse">
 							<?=__('Menu');?>
 						</button>
-						<?=HTML::anchor('/', HTML::image('media/img/logo.png').' '.__('Delivery Pipe'), array('class' => 'navbar-brand'));?>
+						<?=HTML::anchor(SITE_URL, HTML::image('media/img/logo.png').' '.SITE_NAME, array('class' => 'navbar-brand'));?>
 					</div>
 					<div class="collapse navbar-collapse coral-navbar-collapse">
 						<ul class="nav navbar-nav">
