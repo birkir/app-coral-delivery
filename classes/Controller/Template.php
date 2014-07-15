@@ -23,7 +23,7 @@ class Controller_Template extends Controller {
 	/**
 	 * @var array Allowed controllers and actions
 	 */
-	public $allowed = array('Account' => array('login', 'register', 'oauth', 'resetpassword'), 'Media');
+	public $allowed = array('Account' => array('login', 'register', 'link', 'reset'), 'Media');
 
 	/**
 	 * @var bool  Auto render template
@@ -61,7 +61,7 @@ class Controller_Template extends Controller {
 
 			if ($redirect)
 			{
-				HTTP::redirect('account/login');
+				HTTP::redirect('login');
 			}
 		}
 		else

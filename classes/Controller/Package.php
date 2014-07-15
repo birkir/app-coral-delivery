@@ -201,7 +201,7 @@ class Controller_Package extends Controller_Template {
 
 		if ($package->user_id !== $this->user->id OR ! $this->user->is_admin())
 		{
-			throw HTTP_Exception::factory(401, 'Not authorized to view this package');
+			throw HTTP_Exception::factory(403, 'Not authorized to view this package');
 		}
 
 		// Bind extra information
@@ -229,7 +229,7 @@ class Controller_Package extends Controller_Template {
 	{
 		if ( ! $this->user->is_admin())
 		{
-			throw HTTP_Exception::factory(401, 'Not allowed');
+			throw HTTP_Exception::factory(403, 'Not allowed');
 		}
 
 		// Get package with identity from params
@@ -277,7 +277,7 @@ class Controller_Package extends Controller_Template {
 
 		if ($package->user_id !== $this->user->id OR ! $this->user->is_admin())
 		{
-			throw HTTP_Exception::factory(401, 'Not authorized to delete this service');
+			throw HTTP_Exception::factory(403, 'Not authorized to delete this service');
 		}
 
 		// Delete service

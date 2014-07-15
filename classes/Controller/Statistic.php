@@ -8,7 +8,7 @@
  * @copyright  (c) 2014 Birkir Gudjonsson
  * @license    http://kohanaframework.org/licence
  */
-class Controller_Statistics extends Controller_Template {
+class Controller_Statistic extends Controller_Template {
 
 	/**
 	 * Generate all kinds of statistics for your packages

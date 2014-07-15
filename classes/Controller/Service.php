@@ -90,10 +90,14 @@ class Controller_Service extends Controller_Template {
 		// Find user service
 		$service = ORM::factory('User_Service', $this->request->param('id'));
 
-		// Only allow owner and admins
-		if ($service->user_id !== $this->user->id AND ! $this->user->has('roles', ORM::factory('Role', array('name' => 'admin'))))
+		if ( ! $service->loaded())
 		{
-			throw HTTP_Exception::factory(404, 'Service not found.');
+			throw HTTP_Exception::factory(404, 'Service not found');
+		}
+
+		if ($service->user_id !== $this->user->id AND ! $this->user->is_admin())
+		{
+			throw HTTP_Exception::factory(403, 'Not authorized to view this service');
 		}
 
 		// Find driver class name
@@ -196,7 +200,7 @@ class Controller_Service extends Controller_Template {
 
 		if ($service->user_id !== $this->user->id OR ! $this->user->is_admin())
 		{
-			throw HTTP_Exception::factory(401, 'Not authorized to delete this service');
+			throw HTTP_Exception::factory(403, 'Not authorized to delete this service');
 		}
 
 		// Delete service

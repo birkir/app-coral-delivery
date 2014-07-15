@@ -181,7 +181,7 @@ class Controller_Account extends Controller_Template {
 
 		if ($this->auth->logged_in())
 		{
-			return HTTP::redirect('profile');
+			return HTTP::redirect('packages');
 		}
 	}
 
@@ -280,7 +280,7 @@ class Controller_Account extends Controller_Template {
 		$method = $this->request->param('id');
 
 		if (empty($method))
-			return HTTP::redirect('account/login');
+			return HTTP::redirect('login');
 
 		if ( ! in_array($method, $methods))
 		{
@@ -373,7 +373,7 @@ class Controller_Account extends Controller_Template {
 			Cookie::set('authautologin', $token->token, 1209600);
 
 			// Redirect to profile
-			return HTTP::redirect('account');
+			return HTTP::redirect('packages');
 		}
 		else
 		{
@@ -400,7 +400,7 @@ class Controller_Account extends Controller_Template {
 		if ($auth->user->id !== $this->user->id AND ! $this->user->is_admin())
 		{
 			// Dont allow unlinking others authentications
-			throw HTTP_Exception::factory(401, 'Not allowed');
+			throw HTTP_Exception::factory(403, 'Not allowed');
 		}
 
 		// Delete authentication

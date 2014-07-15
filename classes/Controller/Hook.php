@@ -39,7 +39,7 @@ class Controller_Hook extends Controller_Template {
 
 		if ($package->user_id !== $this->user->id OR ! $this->user->is_admin())
 		{
-			throw HTTP_Exception::factory(401, 'Not authorized to view hooks for this package');
+			throw HTTP_Exception::factory(403, 'Not authorized to view hooks for this package');
 		}
 
 		// Find package hooks
@@ -71,7 +71,7 @@ class Controller_Hook extends Controller_Template {
 
 		if ($package->user_id !== $this->user->id OR ! $this->user->is_admin())
 		{
-			throw HTTP_Exception::factory(401, 'Not authorized to create hook for this package');
+			throw HTTP_Exception::factory(403, 'Not authorized to create hook for this package');
 		}
 
 		// Create Hook model
@@ -125,7 +125,7 @@ class Controller_Hook extends Controller_Template {
 
 		if ($package->user_id !== $this->user->id OR ! $this->user->is_admin())
 		{
-			throw HTTP_Exception::factory(401, 'Not authorized to edit this hook');
+			throw HTTP_Exception::factory(403, 'Not authorized to edit this hook');
 		}
 
 		// Get hook driver
@@ -183,7 +183,7 @@ class Controller_Hook extends Controller_Template {
 
 		if ($package->user_id !== $this->user->id OR ! $this->user->is_admin())
 		{
-			throw HTTP_Exception::factory(401, 'Not authorized to delete this hook');
+			throw HTTP_Exception::factory(403, 'Not authorized to delete this hook');
 		}
 
 		// Delete hook
