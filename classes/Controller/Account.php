@@ -208,11 +208,23 @@ class Controller_Account extends Controller_Template {
 				$post = $this->request->post();
 
 				// Create user using Auth create_user method
-				ORM::factory('User')
+				$user = ORM::factory('User')
 				->create_user($post, array('email', 'password'));
 
+
+				if (ORM::factory('User')->count_all() === 1)
+				{
+					// Initialize database
+					$this->initializeDatabase();
+
+					// Add admin role to user
+					$user->add('roles', ORM::factory('Role', array('name' => 'admin')));
+
+				}
+
 				// Add logged in role
-				$item->add('roles', ORM::factory('Role', array('name' => 'login')));
+				$user->add('roles', ORM::factory('Role', array('name' => 'login')));
+
 			}
 			catch (ORM_Validation_Exception $e)
 			{
@@ -408,6 +420,54 @@ class Controller_Account extends Controller_Template {
 
 		// Redirect to account profile
 		HTTP::redirect('profile');
+	}
+
+	/**
+	 * Add roles and carriers to database
+	 *
+	 * @return void
+	 */
+	private function initializeDatabase()
+	{
+		$roles = array(
+			'login' => 'Allows user to log in',
+			'admin' => 'Administrator permissions'
+		);
+
+		foreach ($roles as $role => $name)
+		{
+			if (ORM::factory('Role', array('name' => $role))->loaded())
+				continue;
+
+			$item = ORM::factory('Role');
+			$item->name = $role;
+			$item->description = $name;
+			$item->save();
+		}
+
+		$carriers = array(
+			array(' - Auto detect - ', NULL, 0, NULL),
+			array('Pósturinn', 'Iceland', 0, 'IS_Posturinn'),
+			array('USPS', 'United States', 0, 'US_USPS'),
+			array('Royal Mail', 'United Kingdom', 0, 'UK_RoyalMail'),
+			array('DHL', NULL, 1, 'Express_DHL'),
+			array('FedEx', NULL, 1, 'Express_FedEx'),
+			array('TNT', NULL, 1, 'Express_TNT')
+		);
+
+                foreach ($carriers as $carrier)
+                {
+                        if (ORM::factory('Carrier', array('name' => $carrier[0]))->loaded())
+                                continue;
+
+                        $item = ORM::factory('Carrier');
+                        $item->name = $carrier[0];
+                        $item->country = $carrier[1];
+			$item->express = $carrier[2];
+			$item->driver = $carrier[3];
+                        $item->save();
+                }
+
 	}
 
 } // End Account
