@@ -1,23 +1,20 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 /**
- * Royal Mail Carrier
+ * Country Model
  *
  * @package    Coral
- * @category   Carrier
+ * @category   Model
  * @author     Birkir Gudjonsson (birkir.gudjonsson@gmail.com)
  * @copyright  (c) 2014 Birkir Gudjonsson
  * @license    http://kohanaframework.org/licence
  */
-class Carrier_UK_RoyalMail extends Carrier {
+class Model_Country extends ORM {
 
 	/**
-	 * Get results for tracking number
-	 *
-	 * @return void
+	 * @var array Has-many relationships
 	 */
-	public function track()
-	{
-		return 0;
-	}
+	protected $_has_many = array(
+		'packages' => array()
+	);
 
-} // End RoyalMail UK Carrier
+} // End Country Model

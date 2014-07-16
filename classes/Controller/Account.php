@@ -18,7 +18,8 @@ class Controller_Account extends Controller_Template {
 	public function action_index()
 	{
 		$this->view = View::factory('account/profile')
-		->bind('languages', $languages);
+		->bind('languages', $languages)
+		->bind('success', $success);
 
 		// Setup languages
 		$languages = array(
@@ -84,6 +85,9 @@ class Controller_Account extends Controller_Template {
 
 			// Set language
 			I18n::lang($this->user->language);
+
+			// Show success message
+			$success = TRUE;
 		}
 	}
 
@@ -314,14 +318,23 @@ class Controller_Account extends Controller_Template {
 				'redirect_uri' => Arr::get($config, 'redirect_uri')
 			);
 
-			// Get access token
-			$token = $client->get_access_token(OAuth2_Client::GRANT_TYPE_AUTHORIZATION_CODE, $params);
+			try
+			{
+				// Get access token
+				$token = $client->get_access_token(OAuth2_Client::GRANT_TYPE_AUTHORIZATION_CODE, $params);
 
-			// Set client access token
-			$client->set_access_token($token);
+				// Set client access token
+				$client->set_access_token($token);
+				$client->set_curl_option(CURLOPT_USERAGENT, 'Mozilla/5.0 (compatible; Kohana v'.Kohana::VERSION.' +http://kohanaframework.org/)');
 
-			// Get user data
-			$data = $client->get_user_data();
+				// Get user data
+				$data = $client->get_user_data();
+			}
+			catch (OAuth2_Exception $e)
+			{
+				throw HTTP_Exception::factory(500, 'Could not authenticate using :method.', array(':method' => $method), $e);
+			}
+
 
 			// Get auth token
 			$auth = ORM::factory('User_Auth')
@@ -455,19 +468,18 @@ class Controller_Account extends Controller_Template {
 			array('TNT', NULL, 1, 'Express_TNT')
 		);
 
-                foreach ($carriers as $carrier)
-                {
-                        if (ORM::factory('Carrier', array('name' => $carrier[0]))->loaded())
-                                continue;
+		foreach ($carriers as $carrier)
+		{
+			if (ORM::factory('Carrier', array('name' => $carrier[0]))->loaded())
+				continue;
 
-                        $item = ORM::factory('Carrier');
-                        $item->name = $carrier[0];
-                        $item->country = $carrier[1];
+			$item = ORM::factory('Carrier');
+			$item->name = $carrier[0];
+			$item->country = $carrier[1];
 			$item->express = $carrier[2];
 			$item->driver = $carrier[3];
-                        $item->save();
-                }
-
+			$item->save();
+		}
 	}
 
 } // End Account

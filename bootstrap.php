@@ -128,6 +128,7 @@ Kohana::$config->attach(new Config_File);
  * Enable modules. Modules are referenced by a relative or absolute path.
  */
 Kohana::modules(array(
+	'swiftmail'  => MODPATH.'swiftmail',  // Swift Mailer
 	'oauth2'     => MODPATH.'oauth2',     // OAuth2 Client
 	'mysqli'     => MODPATH.'mysqli',     // MySQLi database driver
 	'auth'       => MODPATH.'auth',       // Basic authentication

@@ -5,7 +5,7 @@
 
 <div class="row">
 	<div class="col-sm-6">
-		<?=Form::open('account/index', array('method' => 'post', 'role' => 'form', 'class' => 'form-horizontal', 'autocomplete' => 'off', 'data-widget' => 'account/profile'));?>
+		<?=Form::open('profile', array('method' => 'post', 'role' => 'form', 'class' => 'form-horizontal', 'autocomplete' => 'off', 'data-widget' => 'account/profile'));?>
 
 			<?php if (isset($error)): ?>
 				<div class="alert alert-warning">
@@ -24,7 +24,7 @@
 			<div class="form-group">
 				<?=Form::label('profileCountry', __('Country'), array('class' => 'col-sm-4 control-label'));?>
 				<div class="col-sm-6">
-					<?=Form::select('country', array('' => '') + Carrier::countries(), $user->country, array('class' => 'form-control', 'id' => 'profileCountry', 'placeholder' => 'Select country'));?>
+					<?=Form::select('country_id', array('' => '') + ORM::factory('Country')->group_by('name')->order_by('name', 'ASC')->find_all()->as_array('id', 'name'), $user->country_id, array('class' => 'form-control', 'id' => 'profileCountry', 'placeholder' => 'Select country'));?>
 				</div>
 			</div>
 
@@ -74,8 +74,11 @@
 			</div>
 
 			<div class="form-group">
-				<div class="col-sm-offset-4">
-					<?=Form::button(NULL, __('Save changes'), array('type' => 'submit', 'class' => 'btn btn-lg btn-primary', 'style' => 'margin-left: 15px'));?>
+				<div class="col-sm-offset-4" style="padding-left: 15px">
+					<?=Form::button(NULL, __('Save changes'), array('type' => 'submit', 'class' => 'btn btn-lg btn-success'));?>
+					<?php if ($success): ?>
+						<small class="text-success" data-hide="2500"><br><br><?=__('Your profile has been updated!');?></small>
+					<?php endif; ?>
 				</div>
 			</div>
 

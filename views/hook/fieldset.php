@@ -59,7 +59,7 @@
 
 	<div class="form-group">
 		<div class="col-sm-offset-2" style="padding-left: 15px">
-			<?=Form::button(NULL, $hook->loaded() ? __('Save changes') : __('Add hook'), array('class' => 'btn btn-lg btn-primary', 'type' => 'submit'));?>
+			<?=Form::button(NULL, __('Save changes'), array('class' => 'btn btn-lg btn-success btn-mobile-block', 'type' => 'submit'));?>
 		</div>
 	</div>
 

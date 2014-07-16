@@ -11,62 +11,70 @@
 class Carrier_IS_Posturinn extends Carrier {
 
 	/**
+	 * @var string Regex for registered check
+	 */
+	public $matchRegistered = '/póstlagt/s';
+
+	/**
+	 * @var string Regex for dispatched check
+	 */
+	public $matchDispatched = '/fór frá erlendri/s';
+
+	/**
+	 * @var string Regex for in customs check
+	 */
+	public $matchInCustoms  = '/tollmiðlun/s';
+
+	/**
+	 * @var string Regex for delivered check
+	 */
+	public $matchDelivered  = '/afhent|skannað til afhendingar/s';
+
+	/**
 	 * @var array Month names
 	 */
-	protected $_months = array('JAN', 'FEB', 'MAR', 'APR', 'MAÍ', 'JÚN', 'JÚL', 'AGÚ', 'SEP', 'OKT', 'NÓV', 'DES');
+	protected $_months = array(
+		'JAN', 'FEB', 'MAR', 'APR',
+		'MAÍ', 'JÚN', 'JÚL', 'AGÚ',
+		'SEP', 'OKT', 'NÓV', 'DES'
+	);
 
 	/**
-	 * Parse location if internal status codes
+	 * Create and execute request needed to process package properties and scan messages.
 	 *
-	 * @param  string Location
-	 * @return array
+	 * @return Response
 	 */
-	private function parse_location($str = NULL)
-	{
-		if (preg_match('#(ISREKA|Reykjavík|Tollmiðlun|Heimkeyrsla|Bréfaflokkunarvél)#s', $str))
-		{
-			// Return Pósturinn head quarters location
-			return array(
-				'name'        => $str,
-				'coordinates' => '64.1291751,-21.7966282',
-				'timezone'    => 'Atlantic/Reykjavik',
-				'country'     => 'Iceland'
-			);
-		}
-
-		return Carrier::location_to_coords($str);
-	}
-
-	/**
-	 * Get results for tracking number
-	 *
-	 * @return void
-	 */
-	public function track()
+	public function getRequest()
 	{
 		// Create HTTP Request
 		$request = Request::factory('http://www.posturinn.is');
 
+		// Get Request client
+		$client = $request->client();
+
 		// Set cURL options
-		$request->client()
-		->options(CURLOPT_RETURNTRANSFER, TRUE)
-		->options(CURLOPT_FOLLOWLOCATION, TRUE)
-		->options(CURLOPT_SSL_VERIFYPEER, FALSE);
+		$client->options(CURLOPT_FOLLOWLOCATION, TRUE);
+		$client->options(CURLOPT_SSL_VERIFYPEER, FALSE);
+		$client->options(CURLOPT_USERAGENT, Carrier::$user_agent);
 
 		// Execute request and get body
 		$body = $request->execute()->body();
 
-		// Count status
-		$count = 0;
-
 		// Setup post data array
 		$post = array(
-			'ctl01$ctl10$txtLabel' => $this->tracking_number,
+			'ctl01$ctl10$txtLabel' => $this->package->tracking_number,
 			'ctl01$ctl10$Button1'  => 'Finna'
 		);
 
 		// List parameters wanted
-		$params = array('RadScriptManager1_TSM', '__EVENTTARGET', '__EVENTARGUMENT', '__VIEWSTATE', 'pathinfo', 'ctl01$ctl02$ctl00$query_string');
+		$params = array(
+			'RadScriptManager1_TSM',
+			'__EVENTTARGET',
+			'__EVENTARGUMENT',
+			'__VIEWSTATE',
+			'pathinfo',
+			'ctl01$ctl02$ctl00$query_string'
+		);
 
 		foreach ($params as $param)
 		{
@@ -82,176 +90,175 @@ class Carrier_IS_Posturinn extends Carrier {
 		->method(Request::POST)
 		->post($post);
 
+		// Get Request client
+		$client = $request->client();
+
 		// Set cURL options
-		$request->client()
-		->options(CURLOPT_RETURNTRANSFER, TRUE)
-		->options(CURLOPT_FOLLOWLOCATION, TRUE)
-		->options(CURLOPT_SSL_VERIFYPEER, FALSE)
-		->options(CURLOPT_COOKIEJAR, APPPATH.'cache/posturinn.is.cookies');
+		$client->options(CURLOPT_FOLLOWLOCATION, TRUE);
+		$client->options(CURLOPT_SSL_VERIFYPEER, FALSE);
+		$client->options(CURLOPT_USERAGENT, Carrier::$user_agent);
+		$client->options(CURLOPT_COOKIEJAR, APPPATH.'cache/cookies/'.sha1('www.posturinn.is').'.cookie');
 
-		// Execute request and get body
-		$body = $request->execute()->body();
+		// Execute request and get response body
+		$response = $request->execute()->body();
 
-		if (preg_match('#finnst ekki#s', $body) AND intval($this->package->state) < Model_Package::SHIPPING_INFO_RECEIVED)
+		// Parse response html dom
+		$dom = new HTML_Parser_HTML5($response);
+
+		return $dom->root;
+	}
+
+	/**
+	 * Get status items categorized by direction
+	 *
+	 * @return array
+	 */
+	function getStatusItems($response)
+	{
+		// Setup returned items array
+		$items = array(
+			Carrier::ORIGIN      => array(),
+			Carrier::DESTINATION => array()
+		);
+
+		// Check if package was found or not
+		if ($not_found = Arr::get($response('#ctl01_ctl08_EyjolfsVilla1'), 0))
 		{
-			// Set package state
-			$this->package->state = Model_Package::NOT_FOUND;
-
-			return FALSE;
+			if ($not_found->getAttribute('style') === 'display:block;')
+			{
+				// Set package state
+				return $this->package->state = Model_Package::NOT_FOUND;
+			}
 		}
 
-		// Which location
-		$loc = ($this->type === Carrier::DESTINATION) ? $this->package->destination_location : $this->package->origin_location;
+		// Get package country
+		$country = ($this->direction === Carrier::DESTINATION) ? $this->package->destination_country_id : $this->package->origin_country_id;
 
-		if (empty($loc) OR $loc === 'Unknown')
+		if (empty($country))
 		{
 			// Set location to Iceland
-			$this->package->{($this->type === Carrier::DESTINATION) ? 'destination_location' : 'origin_location'} = 'Iceland';
+			$this->package->{($this->type === Carrier::DESTINATION) ? 'destination_country_id' : 'origin_country_id'} = ORM::factory('Country', array('name' => 'Iceland'))->id;
 		}
 
-		// Get months as keys
+		// Get months and flip the array for indexes
 		$months = array_flip($this->_months);
 
-		// Find results table body
-		if (preg_match("#ctl01_ctl08_divOuput(.*?)</table>#s", $body, $table))
+		if ($table = Arr::get($response('#ctl01_ctl08_divOuput'), 0))
 		{
-
-			// Find all rows in table body
-			preg_match_all("#<tr>(.*?)</tr>#s", $table[1], $rows);
-
-			foreach ($rows[0] as $row)
+			// Find Rows
+			foreach ($table('tr') as $i => $row)
 			{
-				// Find all table cells in row
-				preg_match_all("#<td.*?>(.*?)</td>#s", $row, $cells);
-
-				// No empty table rows, pretty please
-				if (count($cells[1]) === 0)
-					continue;
-
-				// Extract day of month
-				$dayOfMonth = trim(strip_tags($cells[1][0]));
-
-				// Explode date by brake
-				$date = explode("<br />", trim($cells[1][1]));
-
-				// Get month as number
-				$monthOfYear = intval(isset($months[trim($date[0])]) ? $months[trim($date[0])] : 0) + 1;
-
-				// Extract time
-				$timeOfDay = trim($date[1]);
-
-				// Get current year
-				$year = date('Y');
-
-				// If month exceeds current month, set last year
-				if (intval(date('n')) < $monthOfYear)
+				if ($heading = Arr::get($row('th'), 0))
 				{
-					$year--;
-				}
+					// Trim and clean text
+					$heading = UTF8::trim($heading->getPlainText());
 
-				// Create the timestamp
-				$timestamp = strtotime($year.'-'.$monthOfYear.'-'.$dayOfMonth.' '.(empty($timeOfDay) ? '22:00' : $timeOfDay).':00');
-
-				// Get location and description
-				$locdesc = explode('<br />', isset($cells[1][2])? $cells[1][2] : '');
-
-				// Extract location
-				$location = preg_replace('/\s+/', ' ', trim(strip_tags($locdesc[0])));
-
-				// Extract message
-				$message = trim(strip_tags(isset($locdesc[1]) ? $locdesc[1] : ''));
-
-				// Setup item
-				$item = array();
-				$item['location_raw'] = UTF8::trim(html_entity_decode(strip_tags($location)));
-				$item['location'] = $this->parse_location($item['location_raw']);
-				$item['message'] = UTF8::trim(strip_tags($message));
-				$item['datetime'] = new DateTime();
-				$item['datetime']->setTimeZone(new DateTimeZone('Atlantic/Reykjavik'));
-				$item['datetime']->setTimestamp($timestamp);
-
-				if ( ! empty($item))
-				{
-					// Append status to package
-					if ($this->append_status($item))
+					if (preg_match('/Toll\-sendingarnúmer: (.*)/s', $heading, $customs_number))
 					{
-						if (intval($this->package->state) < Model_Package::SHIPPING_INFO_RECEIVED)
-						{
-							// Set in transit if still loading
-							$this->package->state = Model_Package::IN_TRANSIT;
-						}
+						// Set customs number
+						$this->package->extras('customs_number', $customs_number[1]);
+					}
 
-						if (preg_match('#Tollmiðlun#', $item['message']) AND intval($this->package->state) < Model_Package::IN_CUSTOMS)
-						{
-							// Set package state
-							$this->package->state = Model_Package::IN_CUSTOMS;
-						}
+					if (preg_match('/(.*innflutningsskýrsla.*)/s', $heading, $customs_type))
+					{
+						// Set customs type
+						$this->package->extras('customs_type', $customs_type[1]);
+					}
 
-						if (preg_match('#Fór frá erlendri#', $item['message']) AND empty($this->package->dispatched_at))
-						{
-							// Set package dispatched datetime
-							$this->package->dispatched_at = $item['datetime']->format('Y-m-d H:i:s');
-						}
+					if (preg_match('/Gjöld kr\. (.*)/s', $heading, $customs_payment))
+					{
+						// Set customs payment
+						$this->package->extras('customs_payment', preg_replace('/\./s', NULL, $customs_payment[1]));
+					}
 
-						if (preg_match('#Póstlagt#', $item['message']) AND empty($this->package->registered_at))
-						{
-							// Set package registered datetime
-							$this->package->registered_at = $item['datetime']->format('Y-m-d H:i:s');
-						}
-
-						if (preg_match('#Bréfaflokkunarvél#', $item['location_raw']) AND preg_match('#Tilkynning#', $item['message']) AND intval($this->package->state) < Model_Package::PICK_UP)
-						{
-							// Set package pickup state
-							$this->package->state = Model_Package::PICK_UP;
-						}
-
-						if (preg_match('#[Afhent|Skannað til afhendingar]#', $item['message']))
-						{
-							if (empty($this->package->completed_at))
-							{
-								// Set package completed at datetime
-								$this->package->completed_at = $item['datetime']->format('Y-m-d H:i:s');
-							}
-
-							if (intval($this->package->state) <= Model_Package::PICK_UP)
-							{
-								// Also set state if not greater
-								$this->package->state = Model_Package::DELIVERED;
-							}
-						}
-
-						// Increment count
-						$count++;
+					if (preg_match('/Þyngd (.*) KG/s', $heading, $weight))
+					{
+						// Set package weight
+						$this->package->weight = floatval(preg_replace('/\,/s', '.', $weight[1])) * 1000;
 					}
 				}
-			}
+				else
+				{
+					// Get cells inside row
+					$cells = $row('td');
 
-			if (preg_match('#Toll\-sendingarnúmer\:(.*?)<\/th>#s', $table[1], $tmp))
-			{
-				// Set customs number as extra
-				$this->package->extras('customs_number', UTF8::trim($tmp[1]));
-			}
+					// Get day of month
+					$dayOfMonth = UTF8::trim($cells[0]->getPlainText());
 
-			if (preg_match('#(Tollskyld .*?)<\/th>#s', $table[1], $tmp))
-			{
-				// Set customs type as extra
-				$this->package->extras('customs_type', UTF8::trim($tmp[1]));
-			}
+					// Explode date by brake
+					$monthAndTime = explode("<br />", UTF8::trim($cells[1]->getInnerText()));
 
-			if (preg_match('#Gjöld kr\. (.*?)<\/th>#s', $table[1], $tmp))
-			{
-				// Set payment as extra
-				$this->package->extras('payment', array('amount' => intval(str_replace('.', NULL, $tmp[1])), 'currency' => 'ISK'));
-			}
+					// Get month as number
+					$monthOfYear = Arr::get($months, UTF8::trim(Arr::get($monthAndTime, 0)), 0) + 1;
 
-			if (preg_match('#Þyngd ([0-9\,]*) KG<\/th>#s', $table[1], $tmp))
-			{
-				// Set package weight
-				$this->package->weight = floatval(str_replace(',', '.', $tmp[1])) * 1000;
+					// Extract time
+					$timeOfDay = UTF8::trim(Arr::get($monthAndTime, 1));
+
+					// Get current year
+					$year = date('Y') - (((intval(date('n')) < $monthOfYear)) ? 1 : 0);
+
+					// Create the timestamp
+					$timestamp = strtotime($year.'-'.$monthOfYear.'-'.$dayOfMonth.' '.(empty($timeOfDay) ? '22:00': $timeOfDay).':00');
+
+					// Get location and description
+					$locationAndDesc = explode("<br />", UTF8::trim($cells[2]->getInnerText()));
+
+					// Extract location
+					$location = preg_replace('/\s+/', ' ', UTF8::trim(strip_tags(Arr::get($locationAndDesc, 0))));
+
+					// Extract message
+					$message = UTF8::trim(strip_tags(Arr::get($locationAndDesc, 1)));
+
+					// Setup item
+					$item = array();
+					$item['location'] = $this->parseLocation(UTF8::trim(html_entity_decode(strip_tags($location))));
+					$item['message'] = UTF8::trim(strip_tags($message));
+					$item['datetime'] = new DateTime();
+					$item['datetime']->setTimeZone(new DateTimeZone('Atlantic/Reykjavik'));
+					$item['datetime']->setTimestamp($timestamp);
+
+					// Append to result array
+					$items[$this->direction][] = $item;
+				}
 			}
 		}
 
-		return $count;
+		return $items;
+	}
+
+	/**
+	 * Parse location string to corresponding location info
+	 *
+	 * @param  string $str
+	 * @return array
+	 */
+	public function parseLocation($str)
+	{
+		if (preg_match('#(ISREKA|Reykjavík|Tollmiðlun|Heimkeyrsla|Bréfaflokkunarvél)#s', $str))
+		{
+			// Return Pósturinn head quarters location
+			return array(
+				'raw'         => $str,
+				'name'        => $str,
+				'coordinates' => '64.1291751,-21.7966282',
+				'timezone'    => 'Atlantic/Reykjavik',
+				'country'     => 'Iceland'
+			);
+		}
+
+		return Carrier::getLocation($str);
+	}
+
+	/**
+	 * Check if status matches when package is available for pickup
+	 *
+	 * @param  string $message
+	 * @param  int    $timestamp
+	 * @return bool
+	 */
+	public function checkPickUp($message, $timestamp, $location)
+	{
+		return (preg_match('/bréfaflokkunarvél/s', Arr::get($location, 'raw')) AND preg_match('/tilkynning/s', $message));
 	}
 
 } // End Posturinn IS Carrier

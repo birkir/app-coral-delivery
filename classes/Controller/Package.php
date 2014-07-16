@@ -21,7 +21,8 @@ class Controller_Package extends Controller_Template {
 		// Setup view
 		$this->view = View::factory('package/list')
 		->bind('packages', $packages)
-		->bind('carriers', $carriers);
+		->bind('carriers', $carriers)
+		->bind('countries', $countries);
 
 		// Find packages
 		$packages = $this->user->packages
@@ -32,6 +33,13 @@ class Controller_Package extends Controller_Template {
 
 		// Find carriers
 		$carriers = ORM::factory('Carrier')
+		->order_by('name', 'ASC')
+		->find_all()
+		->as_array('id', 'name');
+
+		// Find countries
+		$countries = ORM::factory('Country')
+		->group_by('name')
 		->order_by('name', 'ASC')
 		->find_all()
 		->as_array('id', 'name');
@@ -235,26 +243,25 @@ class Controller_Package extends Controller_Template {
 		// Get package with identity from params
 		$package = ORM::factory('Package', $this->request->param('id'));
 
-		// Delete all statuses created by origin carrier driver
-		foreach ($package->status->where('direction', '=', Carrier::ORIGIN)->find_all() as $status) $status->delete();
+		// Reset dates
+		$package->registered_at = NULL;
+		$package->dispatched_at = NULL;
+		$package->completed_at = NULL;
 
-		// Track with destination carrier
-		Carrier::factory($package, Carrier::ORIGIN)->track();
+		// Reset state
+		$package->state = Model_Package::LOADING;
 
-		// Only process carrier update once, if set as both.
-		if ($package->origin_carrier->express == '0' AND ($package->origin_carrier_id !== $package->destination_carrier_id))
+		// Remove all statuses
+		foreach ($package->status->find_all() as $status)
 		{
-			// Delete all statuses created by origin carrier driver
-			foreach ($package->status->where('direction', '=', Carrier::DESTINATION)->find_all() as $status) $status->delete();
-
-			// Track with destination carrier
-			Carrier::factory($package, Carrier::DESTINATION)->track();
+			// Delete status
+			$status->delete();
 		}
 
-		// Save package
-		$package->save();
+		// Process package statuses
+		$package->process();
 
-		return HTTP::redirect('package/'.$package->hashid());
+		//return HTTP::redirect('package/'.$package->hashid());
 	}
 
 	/**

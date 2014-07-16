@@ -21,11 +21,11 @@
 				<li class="list-group-item"><a href="#6" data-filter="5"><?=__('Completed');?></a></li>
 				<li class="list-group-header"><?=__('Origin');?></li>
 				<li class="list-group-item" style="padding: 5px 20px 0 30px">
-					<?=Form::select(NULL, array('' => 'Any country') + Carrier::countries(), NULL, array('class' => 'form-control', 'placeholder' => __('Any country'), 'data-filter' => '2'));?>
+					<?=Form::select(NULL, array('' => 'Any country') + $countries, NULL, array('class' => 'form-control', 'placeholder' => __('Any country'), 'data-filter' => '2'));?>
 				</li>
 				<li class="list-group-header"><?=__('Destination');?></li>
 				<li class="list-group-item" style="padding: 5px 20px 15px 30px">
-					<?=Form::select(NULL, array('' => 'Any country') + Carrier::countries(), NULL, array('class' => 'form-control', 'placeholder' => __('Any country'), 'data-filter' => '3'));?>
+					<?=Form::select(NULL, array('' => 'Any country') + $countries, NULL, array('class' => 'form-control', 'placeholder' => __('Any country'), 'data-filter' => '3'));?>
 				</li>
 			</ul>
 			<div class="panel-footer" style="border-top: 1px solid #eee">
@@ -69,8 +69,8 @@
 						<td data-label="Tracking no." data-description="<?=$package->description;?>" data-photo="<?=$package->photo;?>">
 							<?=HTML::anchor('package/'.$package->hashid(), $package->tracking_number, array('title' => __('Show details for package')));?>
 						</td>
-						<td data-label="Origin"><?=$package->origin_location;?></td>
-						<td data-label="Destination"><?=$package->destination_location;?></td>
+						<td data-label="Origin"><?=$package->origin_country->name;?></td>
+						<td data-label="Destination"><?=$package->destination_country->name;?></td>
 						<td data-label="Last date">
 							<?php if ( ! empty($package->completed_at)): ?>
 								<?=date('M j, Y', strtotime($package->completed_at));?>

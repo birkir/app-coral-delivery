@@ -14,8 +14,8 @@ class Controller_Service extends Controller_Template {
 	 * Services available
 	 */
 	public static $methods = array(
-		'Aliexpress' => 'Aliexpress.com',
-		'Sparkfun'   => 'Sparkfun.com'
+		'Aliexpress' => 'AliExpress',
+		'Sparkfun'   => 'SparkFun'
 	);
 
 	/**
@@ -52,7 +52,7 @@ class Controller_Service extends Controller_Template {
 		$service = ORM::factory('User_Service');
 
 		// List methods
-		$methods = self::$methods;
+		$methods = asort(self::$methods);
 
 		if ($this->request->method() === HTTP_Request::POST)
 		{
@@ -120,11 +120,8 @@ class Controller_Service extends Controller_Template {
 			// Call the method and inject request
 			$output = call_user_func(array($driver, $method), $this);
 
-			// Skip auto rendering
-			$this->auto_render = FALSE;
-
 			// Dump the juice
-			$this->response->body($output);
+			$this->view->output = $output;
 		}
 	}
 

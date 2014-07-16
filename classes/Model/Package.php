@@ -39,7 +39,20 @@ class Model_Package extends ORM {
 			'far_key'     => 'id',
 			'foreign_key' => 'destination_carrier_id'
 		),
-		'user' => array()
+		'origin_country' => array(
+			'model'       => 'Country',
+			'far_key'     => 'id',
+			'foreign_key' => 'origin_country_id'
+		),
+		'destination_country' => array(
+			'model'       => 'Country',
+			'far_key'     => 'id',
+			'foreign_key' => 'destination_country_id'
+		),
+		'user' => array(),
+		'service' => array(
+			'model'       => 'User_Service'
+		)
 	);
 
 	/**
@@ -81,6 +94,34 @@ class Model_Package extends ORM {
 	}
 
 	/**
+	 * Process package
+	 *
+	 * @return void
+	 */
+	public function process()
+	{
+		if ( ! $this->_loaded)
+			throw new Kohana_Exception('Cannot process :model model because it is not loaded.', array(':model' => $this->_object_name));
+
+		// Process original carrier
+		$this->origin_carrier->process($this);
+
+		if (intval($this->destination_carrier_id) > 0 AND $this->destination_carrier_id !== $this->origin_carrier_id)
+		{
+			// Process destination carrier
+			$this->destination_carrier->process($this);
+		}
+
+		// Updated at time
+		$this->updated_at = date('Y-m-d H:i:s');
+
+		// Save package
+		$this->save();
+
+		return $this;
+	}
+
+	/**
 	 * Filters to format fields before insert
 	 *
 	 * @return array
@@ -112,6 +153,26 @@ class Model_Package extends ORM {
 		// Setup request
 		$request = Request::factory($url);
 
+		// Set upload directory path
+		$upload_dir = APPPATH.'cache/uploads';
+
+		if ( ! is_dir($upload_dir))
+		{
+			try
+			{
+				// Create the cache directory
+				mkdir($upload_dir, 0755, TRUE);
+
+				// Set permissions (must be manually set to fix umask issues)
+				chmod($upload_dir, 0755);
+			}
+			catch (Exception $e)
+			{
+				throw new Kohana_Exception('Could not create uploads directory :dir',
+					array(':dir' => Debug::path($settings['cache_dir'])));
+			}
+		}
+
 		try
 		{
 			// Execute request
@@ -132,7 +193,7 @@ class Model_Package extends ORM {
 			$filename = sha1($url).'.'.$ext;
 
 			// Write file to disk
-			$fh = fopen(APPPATH.'cache/uploads/'.$filename, 'w');
+			$fh = fopen($upload_dir.'/'.$filename, 'w');
 			fwrite($fh, $response->body());
 			fclose($fh);
 
@@ -232,6 +293,20 @@ class Model_Package extends ORM {
 		$this->where('deleted_at', 'IS', DB::expr('NULL'));
 
 		return parent::find_all();
+	}
+
+	/**
+	 * Finds single database rows and returns the row found
+	 *
+	 * @uses parent
+	 * @return Database_Result
+	 */
+	public function find()
+	{
+		// Only non-deleted objects
+		$this->where('deleted_at', 'IS', DB::expr('NULL'));
+
+		return parent::find();
 	}
 
 	/**

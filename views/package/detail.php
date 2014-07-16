@@ -46,9 +46,9 @@
 				<?php if (isset($extra->customs_number)): ?><dd><?=$extra->customs_number;?></dd><?php endif; ?>
 			<?php endif; ?>
 
-			<?php if (isset($extra->payment)): ?>
-				<dt><?=__('Payment');?></dt>
-				<dd><?=number_format($extra->payment->amount, 0, NULL, '.');?> <?=$extra->payment->currency;?></dd>
+			<?php if (isset($extra->customs_payment)): ?>
+				<dt><?=__('Customs payment');?></dt>
+				<dd><?=number_format($extra->customs_payment, 0, NULL, '.');?></dd>
 			<?php endif; ?>
 
 			<?php if (isset($extra->signature)): ?>
@@ -67,8 +67,8 @@
 </div>
 
 <hr>
-<?php if (intval($package->destination_carrier_id) > 0 AND intval($package->destination_carrier_id) !== 2): ?>
-	<h3><?=__('Destination (:country)', array(':country' => $package->destination_location));?></h3>
+<?php if (intval($package->destination_carrier_id) > 0): ?>
+	<h3><?=__('Destination :country', array(':country' => '<strong>'.$package->destination_country->name.'</strong>'));?></h3>
 	<table class="table table-block">
 		<thead>
 			<tr>
@@ -103,10 +103,10 @@
 		</tbody>
 	</table>
 
-	<h3><?=__('Origin (:country)', array(':country' => $package->origin_location));?></h3>
+	<h3><?=__('Origin :country', array(':country' => '<strong>'.$package->origin_country->name.'</strong>'));?></h3>
 
 <?php else: ?>
-	<h3>From <strong><?=$package->origin_location;?></strong> to <strong><?=$package->destination_location;?></strong></h3>
+	<h3>From <strong><?=$package->origin_country->name;?></strong> to <strong><?=$package->destination_country->name;?></strong></h3>
 <?php endif; ?>
 
 <table class="table table-block">

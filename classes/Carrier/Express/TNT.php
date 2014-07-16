@@ -10,9 +10,39 @@
  */
 class Carrier_Express_TNT extends Carrier {
 
+	/**
+	 * @var string Regex for registered check
+	 */
+	public $matchRegistered = '/shipment received/s';
+
+	/**
+	 * @var string Regex for dispatched check
+	 */
+	public $matchDispatched = '/(in transit|shipment received at tnt location)/s';
+
+	/**
+	 * @var string Regex for in customs check
+	 */
+	public $matchInCustoms = '/customs/s';
+
+	/**
+	 * @var string Regex for out for delivery check
+	 */
+	public $matchOutForDelivery = '/out for delivery/s';
+
+	/**
+	 * @var string Regex for delivered check
+	 */
+	public $matchDelivered = '/shipment delivered/s';
+
+	/**
+	 * Create and execute request needed to process package properties and scan messages.
+	 *
+	 * @return Response
+	 */
 	public function getRequest()
 	{
-		// Setup request
+		// Create HTTP Request
 		$request = Request::factory('http://www.tnt.com/webtracker/tracking.do')
 		->method(Request::POST)
 		->post(array(
@@ -26,43 +56,70 @@ class Carrier_Express_TNT extends Carrier {
 			'refs'          => NULL,
 			'requesttype'   => 'GEN',
 			'searchType'    => 'CON',
-			'cons'          => $this->tracking_number
+			'cons'          => $this->package->tracking_number
 		));
 
-		// Get Request cURL Client
-		$client = Scraper::factory(array(), 'Scraper');
-		$request->client($client);
+		// Get Request client
+		$client = $request->client();
 
-		// Set some options
-		$client->options(CURLOPT_USERAGENT,  'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.146 Safari/537.36');
+		// Set cURL options
+		$client->options(CURLOPT_USERAGENT,  Carrier::$user_agent);
 		$client->options(CURLOPT_REFERER,    'http://www.tnt.com/express/en_us/site/home.html');
-		$client->options(CURLOPT_COOKIEJAR,  APPPATH.'cache/www.tnt.com.cookie');
-		$client->options(CURLOPT_COOKIEFILE, APPPATH.'cache/www.tnt.com.cookie');
+		$client->options(CURLOPT_COOKIEJAR,  APPPATH.'cache/cookies/'.sha1('www.tnt.com').'.cookie');
+		$client->options(CURLOPT_COOKIEFILE, APPPATH.'cache/cookies/'.sha1('www.tnt.com').'.cookie');
 
-		// Execute the request
-		$response = $request->execute();
+		// Execute request and get body
+		$response = $request->execute()->body();
 
-		return $response->html;
+		// Parse response html dom
+		$dom = new HTML_Parser_HTML5($response);
+
+		return $dom->root;
 	}
 
-	public function track()
+	/**
+	 * Get status items categorized by direction
+	 *
+	 * @return array
+	 */
+	function getStatusItems($response)
 	{
-		$html = $this->getRequest();
+		// Setup returned items array
+		$items = array(
+			Carrier::ORIGIN      => array(),
+			Carrier::DESTINATION => array()
+		);
 
-		// Get status table
-		$table = $html('table')[3];
-		$table = $table('table');
+		// Get main table
+		$table = $response('table', 3);
 
-		// Find all rows
-		$details = $table[0];
-		$list = $table[1];
+		// Get details table
+		$details = $table('table', 0);
+
+		// Get scan status table
+		$list = $table('table', 1);
 
 		foreach ($details('tr') as $row)
 		{
-			if (empty($this->package->destination_location) AND preg_match('#Destination#s', $row->html()))
+			if (empty($this->package->destination_country_id) AND preg_match('#Destination#s', $row->html()))
 			{
-				$loc = Carrier::location_to_coords(UTF8::substr($row('b')[0]->getPlainText(), 0, UTF8::strlen($row('b')[0]->getPlainText())));
-				$this->package->destination_location = $loc['country'];
+				// Get location data
+				$location = Carrier::getLocation($this->getText($row('b', 0)));
+
+				// Find country row in database
+				$country = ORM::factory('Country', array('name' => Arr::get($location, 'country')));
+
+				if ($country->loaded())
+				{
+					// Set country id
+					$this->package->destination_country_id = $country->id;
+				}
+			}
+
+			if (preg_match('#Signatory#s', $row->html()))
+			{
+				// Set signature to extra
+				$this->package->extras('signature', $this->getText($row('b', 0)));
 			}
 		}
 
@@ -71,207 +128,50 @@ class Carrier_Express_TNT extends Carrier {
 			$cells = $row('td');
 
 			// Get cells
-			$date = $cells[0]->getPlainText();
-			$time = $cells[1]->getPlainText();
-			$location = $cells[2]->getPlainText();
-			$message = $cells[3]->getPlainText();
-
-			// The DOM is a mess, cleanup needed
-			$datetime = date('Y-m-d', strtotime(UTF8::substr($date, 0, UTF8::strlen($date) - 1)));
-			$datetime .= ' '.UTF8::substr($time, 0, UTF8::strlen($time) - 1);
-			$location = UTF8::substr($location, 0, UTF8::strlen($location) - 1);
-			$message = UTF8::substr($message, 0, UTF8::strlen($message) - 1);
+			$datetime = date('Y-m-d', strtotime($this->getText($cells[0]))).' '.$this->getText($cells[1]);
+			$location = $this->getText($cells[2]);
+			$message = $this->getText($cells[3]);
 
 			// Setup item
 			$item = array();
-			$item['location_raw'] = $location;
-			$item['location'] = Carrier::location_to_coords($item['location_raw']);
+			$item['location'] = Carrier::getLocation($location);
 			$item['message'] = $message;
 			$item['datetime'] = new DateTime();
 			$item['datetime']->setTimeZone(new DateTimeZone(Arr::get($item['location'], 'timezone', 'Atlantic/Reykjavik')));
 			$item['datetime']->setTimestamp(strtotime($datetime));
 
-			if (empty($this->package->origin_location))
+			if (empty($this->package->origin_country_id))
 			{
-				$this->package->origin_location = Arr::get($item['location'], 'country', 'Unknown');
+				// Find country row in database
+				$country = ORM::factory('Country', array('name' => Arr::get($location, 'country')));
+
+				if ($country->loaded())
+				{
+					// Set country id
+					$this->package->origin_country_id = $country->id;
+				}
 			}
 
-			$this->checkState($item);
-
-			echo Debug::vars($item);
-			echo Debug::vars($this->package->state);
+			// Append to result array
+			$items[$this->direction][] = $item;
 		}
 
-		echo Debug::vars($this->package->as_array());
-
+		return $items;
 	}
 
 	/**
-	 * Process current status for package datetimes and current state.
+	 * Some unexpected character is at the end of some strings.
 	 *
-	 * @param  array $item
-	 * @return void
+	 * @param  string $str
+	 * @return string
 	 */
-	public function checkState($item)
+	public function getText($str)
 	{
-		// Get package
-		$package = $this->package;
+		// Get string plain text
+		$str = is_array($str) ? $str[0]->getPlainText() : $str->getPlainText();
 
-		// Set datetime timezone to application's timezone 
-		$item['datetime']->setTimezone(new DateTimeZone(date_default_timezone_get()));
-
-		// Get status timestamp
-		$timestamp = $item['datetime']->getTimestamp();
-
-		// Get status datetime
-		$datetime = $item['datetime']->format('Y-m-d H:i:s');
-
-		// Get message as lowercase
-		$message = UTF8::trim(UTF8::strtolower($item['message']));
-
-		// Get current state
-		$state = intval($this->package->state);
-
-		// Check if registered timestamp is newer than current, or empty
-		if ((empty($package->registered_at) OR strtotime($package->registered_at) > $timestamp) AND $this->checkRegistered($message, $timestamp))
-		{
-			// Set package registered timestamp
-			$this->package->registered_at = $datetime;
-
-			// Set package state
-			$state = Model_Package::REGISTERED;
-		}
-
-		// Check if dispatched at timestamp is newer than current, or empty
-		else if ($this->checkInTransit($message, $timestamp))
-		{
-			// Set package dispatched timestamp
-			if ((empty($package->dispatched_at) OR strtotime($package->dispatched_at) > $timestamp))
-			{
-				$this->package->dispatched_at = $datetime;
-			}
-
-			if ($state < Model_Package::DELIVERED)
-			{
-				// Set package state to "In transit".
-				$state = Model_Package::IN_TRANSIT;
-			}
-		}
-
-		// List state callbacks
-		$checkCallbacks = array(
-			Model_Package::IN_CUSTOMS       => 'checkInCustoms',
-			Model_Package::OUT_FOR_DELIVERY => 'checkOutForDelivery',
-			Model_Package::FAILED_ATTEMPT   => 'checkFailedAttempt'
-		);
-
-		foreach ($checkCallbacks as $checkState => $callback)
-		{
-			if ($state < $checkState AND call_user_func_array(array($this, $callback), array($message, $timestamp)))
-			{
-				// Set current state
-				$state = $checkState;
-			}
-		}
-
-		if (empty($package->completed_at) AND $this->checkDelivered($message, $timestamp))
-		{
-			// Set package complete timestamp
-			$this->package->completed_at = $datetime;
-
-			if ($state < Model_Package::DELIVERED)
-			{
-				// Set package state to "Delivered".
-				$state = Model_Package::DELIVERED;
-			}
-		}
-
-		// Set package model state
-		$this->package->state = $state;
-	}
-
-	/**
-	 * Check if status matches when shipping info was received.
-	 *
-	 * @param  string $message
-	 * @param  int    $timestamp
-	 * @return bool
-	 */
-	public function checkRegistered($message, $location)
-	{
-		return empty($this->package->registered_at);
-	}
-
-	/**
-	 * Check if status matches when package was registered.
-	 *
-	 * @param  string $message
-	 * @param  int    $timestamp
-	 * @return bool
-	 */
-	public function checkInTransit($message, $timestamp)
-	{
-		return TRUE;
-	}
-
-	/**
-	 * Check if status matches when package was dispatched.
-	 *
-	 * @param  string $message
-	 * @param  int    $timestamp
-	 * @return bool
-	 */
-	public function checkDispatched($message, $timestamp)
-	{
-		return preg_match('#left fedex origin facility#s', $message);
-	}
-
-	/**
-	 * Check if status matches when package in customs.
-	 *
-	 * @param  string $message
-	 * @param  int    $timestamp
-	 * @return bool
-	 */
-	public function checkInCustoms($message, $timestamp)
-	{
-		return preg_match('#international shipment release#s', $message);
-	}
-
-	/**
-	 * Check if status matches when package is out for delivery.
-	 *
-	 * @param  string $message
-	 * @param  int    $timestamp
-	 * @return bool
-	 */
-	public function checkOutForDelivery($message, $timestamp)
-	{
-		return preg_match('#on fedex vehicle for delivery#s', $message);
-	}
-
-	/**
-	 * Check if status matches when package is out for delivery.
-	 *
-	 * @param  string $message
-	 * @param  int    $timestamp
-	 * @return bool
-	 */
-	public function checkFailedAttempt($message, $timestamp)
-	{
-		return preg_match('#delivery exception future delivery requested#s', $message);
-	}
-
-	/**
-	 * Check if status matches when package is delivered.
-	 *
-	 * @param  string $message
-	 * @param  int    $timestamp
-	 * @return bool
-	 */
-	public function checkDelivered($message, $timestamp)
-	{
-		return preg_match('#delivered#s', $message);
+		// Skew last character off
+		return UTF8::substr($str, 0, UTF8::strlen($str) - 1);
 	}
 
 } // End TNT Express Carrier

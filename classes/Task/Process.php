@@ -10,7 +10,7 @@ class Task_Process extends Minion_Task {
 	/**
 	 * @var integer Update interval in seconds
 	 */
-	protected $_update_interval = 900;
+	protected $_update_interval = 0;
 
 	/**
 	 * Process all packages carrier drivers
@@ -22,12 +22,6 @@ class Task_Process extends Minion_Task {
 	{
 		// Only report catastrophic errors
 		error_reporting(E_ERROR);
-
-		if ( ! Fragment::load('17track_captcha', Date::HOUR))
-		{
-			echo Debug::vars(Carrier::solve_captcha());
-			Fragment::save();
-		}
 
 		// Find all user services 6 hour update delay
 		$services = ORM::factory('User_Service')
@@ -60,6 +54,7 @@ class Task_Process extends Minion_Task {
 			}
 
 			$service->updated_at = date('Y-m-d H:i:s');
+			// $service->save();
 		}
 
 		// Load all packages that are not complete and last updated
@@ -85,42 +80,23 @@ class Task_Process extends Minion_Task {
 			Minion_CLI::write('[Package '.Minion_CLI::color($package->tracking_number, 'light_blue').']');
 
 			// Track origin carrier
-			Minion_CLI::write(' - processing origin carrier for status updates');
+			Minion_CLI::write(' - processing package for status updates');
 			try
 			{
-				$count = Carrier::factory($package, Carrier::ORIGIN)->track();
-				Minion_CLI::write(' - found: '.$count.' status updates!');
+				$package->process();
 			}
 			catch (Exception $e)
 			{
 				Minion_CLI::write(' - '.Minion_CLI::color('failed, check error log.', 'red'));
 			}
 
-			// Track destination carrier
-			Minion_CLI::write(' - processing destination carrier for status updates');
-			try
+			if ($package->state !== $state AND $package->notify_email === 1)
 			{
-				$count = Carrier::factory($package, Carrier::DESTINATION)->track();
-				Minion_CLI::write(' - found: '.$count.' status updates!');
-			}
-			catch (Exception $e)
-			{
-				Minion_CLI::write(' - '.Minion_CLI::color('failed, check error log.', 'red'));
-			}
-
-			// Set updated at for further processing
-			$package->updated_at = date('Y-m-d H:i:s');
-
-			// Save package
-			$package->save();
-
-			if (intval($package->state) !== $state AND intval($package->notify_email) === 1)
-			{
-				mail($package->user->email, 'Coral Delivery :: '.__('Status update for :tracking_number', array(':tracking_number' => $package->tracking_number)), View::factory('mail/package/status')->set('package', $package), implode("\r\n", array(
+				mail($package->user->email, SITE_NAME.' :: '.__('Status update for :tracking_number', array(':tracking_number' => $package->tracking_number)), View::factory('mail/package/status')->set('package', $package), implode("\r\n", array(
 					'MIME-Version: 1.0',
 					'Content-type: text/html; charset=utf-8',
 					'To: '.$package->user->fullname.' <'.$package->user->email.'>',
-					'From: Coral Delivery <www-data@corona.forritun.org>'
+					'From: '.SITE_NAME.' <www-data@corona.forritun.org>'
 				)));
 			}
 		}

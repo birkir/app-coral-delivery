@@ -17,4 +17,36 @@ class Model_Carrier extends ORM {
 		'packages' => array()
 	);
 
+	/**
+	 * Process our carrier driver stuff
+	 *
+	 * @param  ORM $package
+	 * @return bool
+	 */
+	public function process($package)
+	{
+		// Setup driver name list
+		$driver = array('Carrier');
+
+		if ($this->express === 1)
+		{
+			// Push express to array
+			$driver[] = 'Express';
+		}
+
+		// Push driver name to array
+		$driver[] = empty($this->driver) ? 'Core' : UTF8::ucfirst($this->driver);
+
+		// Set the driver class name
+		$driver = implode('_', $driver);
+
+		// Create the carrier driver
+		$driver = new $driver($package, $this);
+
+		// Process carrier driver
+		$driver->process();
+
+		return $this;
+	}
+
 } // End Carrier Model

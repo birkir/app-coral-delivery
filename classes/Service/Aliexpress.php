@@ -116,6 +116,9 @@ class Service_Aliexpress extends Service {
 		// Get list of completed orders
 		$list = $this->getOrderList(Service_Aliexpress::COMPLETED_ORDER);
 
+		// Get Auto Detect carrier id
+		$auto_id = ORM::factory('Carrier', array('driver' => NULL))->id;
+
 		foreach ($list->orderViewList as $item)
 		{
 			// Get order tracking information
@@ -125,17 +128,18 @@ class Service_Aliexpress extends Service {
 
 			foreach ($track->shippingOrderList as $info)
 			{
-				if (ORM::factory('Package', array('tracking_number' => $info->trackingNum))->loaded())
+				if ($this->user->packages->where('tracking_number', '=', $info->trackingNum)->find()->loaded())
 					continue;
 
 				// Create new package and set properties
 				$package = ORM::factory('Package');
+				$package->service_id = $this->service->id;
 				$package->user_id = $controller->user->id;
 				$package->tracking_number = $info->trackingNum;
 				$package->photo = 'http://g01.a.alicdn.com/kf/'.$item->smallPhotoPath;
 				$package->description = $item->productName->value;
-				$package->origin_carrier_id = 4;
-				$package->destination_carrier_id = 4;
+				$package->origin_carrier_id = $auto_id;
+				$package->destination_carrier_id = $auto_id;
 				$package->created_at = date('Y-m-d H:i:s');
 				$package->save();
 			}
@@ -173,7 +177,7 @@ class Service_Aliexpress extends Service {
 
 			foreach ($track->shippingOrderList as $info)
 			{
-				if (ORM::factory('Package', array('tracking_number' => $info->trackingNum))->loaded())
+				if ($this->service->user->packages->where('tracking_number', '=', $info->trackingNum)->find()->loaded())
 					continue;
 
 				// Create package model and set values
@@ -308,6 +312,8 @@ class Service_Aliexpress extends Service {
 			'currentPage' => 1,
 			'pageSize' => 10
 		));
+
+		echo Debug::vars($response);
 
 		return $response;
 	}

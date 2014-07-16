@@ -45,6 +45,9 @@ class Controller_Template extends Controller {
 		// Get authenticated user
 		$this->user = $this->auth->get_user();
 
+		// Get delivery class
+		$this->delivery = new Delivery;
+
 		if ( ! $this->auth->logged_in())
 		{
 			$redirect = TRUE;

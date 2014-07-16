@@ -92,7 +92,7 @@
 
 	<div class="form-group">
 		<div class="col-sm-offset-2 col-xs-12" style="padding-left: 15px">
-			<?=Form::button(NULL, $package->loaded() ? __('Save changes') : __('Add package'), array('class' => 'btn btn-lg btn-primary btn-mobile-block', 'type' => 'submit'));?>
+			<?=Form::button(NULL, __('Save changes'), array('class' => 'btn btn-lg btn-success btn-mobile-block', 'type' => 'submit'));?>
 		</div>
 	</div>
 

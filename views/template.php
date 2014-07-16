@@ -35,13 +35,13 @@
 					<div class="collapse navbar-collapse coral-navbar-collapse">
 						<ul class="nav navbar-nav">
 							<?php if ($auth->logged_in()): ?>
-								<li<?=Nav::ac('Package');?>><?=HTML::anchor('packages', __('Packages'));?></li>
-								<li<?=Nav::ac('Service');?>><?=HTML::anchor('services', __('Services'));?></li>
-								<li<?=Nav::ac('Account', 'index');?>><?=HTML::anchor('profile', __('Profile'));?></li>
+								<li<?=Delivery::ac('Package');?>><?=HTML::anchor('packages', __('Packages'));?></li>
+								<li<?=Delivery::ac('Service');?>><?=HTML::anchor('services', __('Services'));?></li>
+								<li<?=Delivery::ac('Account', 'index');?>><?=HTML::anchor('profile', __('Profile'));?></li>
 								<li><?=HTML::anchor('logout', __('Logout'));?></li>
 							<?php else: ?>
-								<li<?=Nav::ac('Account', 'login');?>><?=HTML::anchor('login', __('Login'));?></li>
-								<li<?=Nav::ac('Account', 'register');?>><?=HTML::anchor('register', __('Register'));?></li>
+								<li<?=Delivery::ac('Account', 'login');?>><?=HTML::anchor('login', __('Login'));?></li>
+								<li<?=Delivery::ac('Account', 'register');?>><?=HTML::anchor('register', __('Register'));?></li>
 							<?php endif; ?>
 						</ul>
 					</div>

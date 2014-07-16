@@ -11,12 +11,131 @@
 class Carrier_US_USPS extends Carrier {
 
 	/**
+	 * @var string Regex for registered check
+	 */
+	public $matchRegistered     = '/electronic shipping info received/s';
+
+	/**
+	 * @var string Regex for dispatched check
+	 */
+	public $matchDispatched     = '/(accepted|processed|depart)/s';
+
+	/**
+	 * @var string Regex for in customs check
+	 */
+	public $matchInCustoms      = '/customs clearance/s';
+
+	/**
+	 * @var string Regex for failed attempt check
+	 */
+	public $matchFailedAttempt  = '/(delivery attempt|addressee cannot be located)/s';
+
+	/**
+	 * @var string Regex for delivered check
+	 */
+	public $matchDelivered      = '/delivered/s';
+
+	/**
+	 * Create and execute request needed to process package properties and scan messages.
+	 *
+	 * @return Response
+	 */
+	public function getRequest()
+	{
+		// Create HTTP Request
+		$request = Request::factory('https://tools.usps.com/go/TrackConfirmAction!input.action')
+		->query(array(
+			'tRef'    => 'qt',
+			'tLc'     => 0,
+			'tLabels' => 'CJ223231688US' //$this->package->tracking_number
+		));
+
+		// Get Request client
+		$client = $request->client();
+
+		// Set cURL options
+		$client->options(CURLOPT_FOLLOWLOCATION, TRUE);
+		$client->options(CURLOPT_SSL_VERIFYPEER, FALSE);
+		$client->options(CURLOPT_USERAGENT, Carrier::$user_agent);
+
+		// Execute request and get body
+		$response = $request->execute()->body();
+
+		// Parse response html dom
+		$dom = new HTML_Parser_HTML5($response);
+
+		return $dom->root;
+	}
+
+	/**
+	 * Get status items categorized by direction
+	 *
+	 * @return array
+	 */
+	function getStatusItems($response)
+	{
+		// Setup returned items array
+		$items = array(
+			Carrier::ORIGIN      => array(),
+			Carrier::DESTINATION => array()
+		);
+
+		if ($error = Arr::get($response('.progress-indicator'), 0) AND preg_match('/error/s', (string)$error->getPlainText()))
+		{
+			// Set package state
+			return $this->package->state = Model_Package::NOT_FOUND;
+		}
+
+		// Find services and features
+		foreach (array('product' => 'services', 'feature' => 'features') as $key => $value)
+		{
+			if ($item = Arr::get($response('.'.$key), 0))
+			{
+				// Setup list
+				$list = array();
+
+				foreach ($item('li') as $list_item)
+				{
+					// Append value to list
+					$list[] = UTF8::trim($list_item->getPlainText());
+				}
+
+				// Add services to extras
+				$this->package->extras($value, implode(', ', $list));
+			}
+		}
+
+		if ($table = $response('#tc-hits', 0))
+		{
+			$rows = $table('tr');
+
+			foreach ($rows as $row)
+			{
+				if ($location = $row('td.location', 0) AND $message = $row('td.status', 0) AND $datetime = $row('td.date-time', 0))
+				{
+					$item = array();
+					$item['location'] = Carrier::getLocation(UTF8::trim(html_entity_decode($location->getPlainText())));
+					$item['message'] = UTF8::trim(strip_tags($message->getPlainText()));
+					$item['datetime'] = $this->parseDatetime($datetime->getPlainText(), Arr::get($item['location'], 'timezone'));
+					$item['state'] = $this->getState($item);
+
+					// Append to items array
+					$items[$this->direction][] = $item;
+				}
+			}
+		}
+
+		return $items;
+	}
+
+
+	/**
 	 * Parse datetime string from usps.com
 	 *
 	 * @param  string   Text to parse
 	 * @return DateTime
 	 */
-	private function parse_datetime($str = NULL, $timezone = NULL)
+	private function parseDatetime($str = NULL, $timezone = NULL)
 	{
 		// Create DateTime
 		$dt = new DateTime();
@@ -55,88 +174,6 @@ class Carrier_US_USPS extends Carrier {
 		}
 
 		return $dt;
-	}
-
-	/**
-	 * Get results for tracking number
-	 *
-	 * @return void
-	 */
-	public function track()
-	{
-		// Create Request URL
-		$url = 'https://tools.usps.com/go/TrackConfirmAction!input.action?tRef=qt&tLc=0&tLabels='.$this->tracking_number;
-
-		// Create request and execute it
-		$response = Request::factory($url)->execute();
-
-		// Extract body from response
-		$body = $response->body();
-
-		// How many records passed
-		$count = 0;
-
-		if (preg_match('#not available#s', $body))
-		{
-			return FALSE;
-		}
-
-		// Find status
-		preg_match('#<h4>Postal Product:</h4>.*<li>(.*)\n\t+</li>#s', $body, $status);
-		$status = UTF8::trim($status[1]);
-
-		// Find feature
-		if (preg_match('#<div class="feature">(.*?)</div>#s', $body, $feature))
-		{
-			$feature = UTF8::trim(strip_tags($feature[1]));
-			$this->package->extra('feature', $feature);
-		}
-
-
-		// Find results table body
-		if (preg_match('#<table.*id="tc-hits">.*</thead>(.*)</tbody>#s', $body, $table))
-		{
-			// Find all rows in table body
-			preg_match_all('#<tr.*?>(.*?)</tr>#s', $table[1], $rows);
-
-			foreach ($rows[1] as $row)
-			{
-				// Setup item
-				$item = array();
-
-				// Get location
-				if (preg_match('#<td class="location">(.*?)</td>#s', $row, $location))
-				{
-					$item['location_raw'] = UTF8::trim(html_entity_decode(strip_tags($location[1])));
-					$item['location'] = Carrier::location_to_coords($item['location_raw']);
-				}
-
-				// Get message
-				if (preg_match('#<td class="status">(.*?)</td>#s', $row, $message))
-				{
-					$item['message'] = UTF8::trim(strip_tags($message[1]));
-				}
-
-				// Get date time of status
-				if (preg_match('#<td class="date-time">(.*?)</td>#s', $row, $datetime))
-				{
-					$item['datetime'] = $this->parse_datetime($datetime[1], isset($item['location']['timezone']) ? $item['location']['timezone'] : NULL);
-				}
-
-				if ( ! empty($item))
-				{
-					// Append status to package
-					if ($this->append_status($item))
-					{
-						// Increment statses
-						$count++;
-					}
-
-				}
-			}
-		}
-
-		return $count;
 	}
 
 } // End USPS Carrier

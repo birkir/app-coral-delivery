@@ -14,6 +14,15 @@ $(document).on('ready', function () {
 		}
 	}).trigger('change');
 
+	// Hide after x time
+	$('[data-hide]').each(function () {
+		var el = $(this);
+		el.addClass('fade in');
+		setTimeout(function () {
+			el.removeClass('in');
+		}, parseInt(el.data('hide'), 0));
+	});
+
 	// Remote buttons
 	// ---
 	$('[data-remote]').on('click', function (e) {
